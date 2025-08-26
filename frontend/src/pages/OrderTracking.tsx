@@ -3,7 +3,6 @@ import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeftIcon,
   MapPinIcon,
-  ClockIcon,
   PhoneIcon,
 } from '@heroicons/react/24/outline';
 

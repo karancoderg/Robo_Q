@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { Toaster } from 'react-hot-toast';
@@ -11,7 +10,6 @@ import { SocketProvider } from '@/contexts/SocketContext';
 // Components
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import LoadingSpinner from '@/components/LoadingSpinner';
 
 // Pages
 import Home from '@/pages/Home';

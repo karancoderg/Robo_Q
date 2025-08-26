@@ -6,7 +6,7 @@ export interface User {
   role: 'user' | 'vendor' | 'admin';
   isVerified: boolean;
   address?: Address;
-  createdAt: string;
+  createdAt?: string;
 }
 
 export interface Address {

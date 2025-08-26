@@ -245,7 +245,7 @@ export const changePassword = asyncHandler(async (req: AuthRequest, res: Respons
   });
 });
 
-export const refreshToken = asyncHandler(async (req: Request, res: Response) => {
+export const refreshToken = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const { refreshToken } = req.body;
 
   if (!refreshToken) {
@@ -284,12 +284,16 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response) => 
   }
 });
 
-export const googleAuth = asyncHandler(async (req: Request, res: Response) => {
+export const googleAuth = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   // This will be handled by Passport middleware
   // Just a placeholder for the route
+  res.status(501).json({
+    success: false,
+    message: 'Google OAuth redirect flow not implemented'
+  });
 });
 
-export const googleTokenAuth = asyncHandler(async (req: Request, res: Response) => {
+export const googleTokenAuth = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const { credential } = req.body;
   
   if (!credential) {
@@ -326,7 +330,7 @@ export const googleTokenAuth = asyncHandler(async (req: Request, res: Response) 
       
       logger.info(`Google login successful for existing user: ${email}`);
       
-      return res.json({
+      res.json({
         success: true,
         message: 'Login successful',
         data: {
@@ -341,6 +345,7 @@ export const googleTokenAuth = asyncHandler(async (req: Request, res: Response) 
           ...tokens
         }
       });
+      return;
     }
     
     // Check if user exists with the same email
@@ -357,7 +362,7 @@ export const googleTokenAuth = asyncHandler(async (req: Request, res: Response) 
       
       logger.info(`Google account linked to existing user: ${email}`);
       
-      return res.json({
+      res.json({
         success: true,
         message: 'Account linked and login successful',
         data: {
@@ -372,6 +377,7 @@ export const googleTokenAuth = asyncHandler(async (req: Request, res: Response) 
           ...tokens
         }
       });
+      return;
     }
     
     // Create new user

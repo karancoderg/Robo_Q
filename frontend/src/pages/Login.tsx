@@ -113,64 +113,64 @@ const Login: React.FC = () => {
             </div>
 
             <form className="space-y-6" onSubmit={handleLogin}>
-            <div className="rounded-md shadow-sm -space-y-px">
-              <div>
-                <label htmlFor="email" className="sr-only">
-                  Email address
-                </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  className="input rounded-t-md"
-                  placeholder="Email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
+              <div className="rounded-md shadow-sm -space-y-px">
+                <div>
+                  <label htmlFor="email" className="sr-only">
+                    Email address
+                  </label>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    className="input rounded-t-md"
+                    placeholder="Email address"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="password" className="sr-only">
+                    Password
+                  </label>
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autoComplete="current-password"
+                    required
+                    className="input rounded-b-md"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
               </div>
+
               <div>
-                <label htmlFor="password" className="sr-only">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  className="input rounded-b-md"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="btn btn-primary btn-lg w-full"
+                >
+                  {loading ? <LoadingSpinner size="sm" /> : 'Sign in'}
+                </button>
               </div>
-            </div>
 
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="btn btn-primary btn-lg w-full"
-              >
-                {loading ? <LoadingSpinner size="sm" /> : 'Sign in'}
-              </button>
-            </div>
-
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={handleOTPLogin}
-                className="text-sm text-primary-600 hover:text-primary-500"
-              >
-                Sign in with OTP instead
-              </button>
-              <p className="text-xs text-gray-500 mt-2">
-                Note: You must have a registered account to sign in
-              </p>
-            </div>
-          </form>
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={handleOTPLogin}
+                  className="text-sm text-primary-600 hover:text-primary-500"
+                >
+                  Sign in with OTP instead
+                </button>
+                <p className="text-xs text-gray-500 mt-2">
+                  Note: You must have a registered account to sign in
+                </p>
+              </div>
+            </form>
           </>
         ) : (
           <form className="mt-8 space-y-6" onSubmit={handleVerifyOTP}>

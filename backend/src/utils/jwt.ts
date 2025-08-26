@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { IUser } from '../types';
 
 interface TokenPayload {
@@ -14,9 +14,17 @@ export const generateAccessToken = (user: IUser): string => {
     role: user.role
   };
 
-  return jwt.sign(payload, process.env.JWT_SECRET!, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d'
-  });
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET is not defined');
+  }
+
+  const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
+  const options = {
+    expiresIn: expiresIn
+  } as SignOptions;
+
+  return jwt.sign(payload, secret, options);
 };
 
 export const generateRefreshToken = (user: IUser): string => {
@@ -26,9 +34,17 @@ export const generateRefreshToken = (user: IUser): string => {
     role: user.role
   };
 
-  return jwt.sign(payload, process.env.JWT_REFRESH_SECRET!, {
-    expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d'
-  });
+  const secret = process.env.JWT_REFRESH_SECRET;
+  if (!secret) {
+    throw new Error('JWT_REFRESH_SECRET is not defined');
+  }
+
+  const expiresIn = process.env.JWT_REFRESH_EXPIRES_IN || '30d';
+  const options = {
+    expiresIn: expiresIn
+  } as SignOptions;
+
+  return jwt.sign(payload, secret, options);
 };
 
 export const verifyAccessToken = (token: string): TokenPayload => {

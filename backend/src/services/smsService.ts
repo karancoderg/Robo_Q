@@ -2,8 +2,8 @@ import twilio from 'twilio';
 import { logger } from '../config/logger';
 
 class SMSService {
-  private client: twilio.Twilio;
-  private fromNumber: string;
+  private client: twilio.Twilio | null = null;
+  private fromNumber: string = '';
 
   constructor() {
     if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {

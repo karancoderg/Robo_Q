@@ -37,7 +37,7 @@ passport.use(new GoogleStrategy({
     
     // Create new user
     if (!email) {
-      return done(new Error('No email provided by Google'), null);
+      return done(new Error('No email provided by Google'), false);
     }
     
     const newUser = await User.create({
@@ -55,7 +55,7 @@ passport.use(new GoogleStrategy({
     
   } catch (error) {
     logger.error('Google OAuth error:', error);
-    return done(error, null);
+    return done(error, false);
   }
 }));
 

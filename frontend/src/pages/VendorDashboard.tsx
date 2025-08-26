@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { vendorAPI } from '@/services/api';
@@ -40,7 +40,7 @@ const VendorDashboard: React.FC = () => {
   // Fetch menu items
   const { data: itemsData, isLoading: itemsLoading } = useQuery(
     'vendor-dashboard-items',
-    () => vendorAPI.getItems({ limit: 5 }),
+    () => vendorAPI.getItems(),
     {
       select: (response) => response.data.data.items,
     }
@@ -227,7 +227,7 @@ const VendorDashboard: React.FC = () => {
           </div>
           <div className="card-content">
             <div className="space-y-4">
-              {recentOrders.map((order) => (
+              {recentOrders.map((order: any) => (
                 <div key={order._id} className="border border-gray-200 rounded-lg p-4">
                   <div className="flex justify-between items-start mb-3">
                     <div>
@@ -240,7 +240,7 @@ const VendorDashboard: React.FC = () => {
                   </div>
                   
                   <div className="mb-3">
-                    {order.items.map((item, index) => (
+                    {order.items.map((item: any, index: number) => (
                       <p key={index} className="text-sm text-gray-600">
                         {item.quantity}x {item.name}
                       </p>
@@ -282,7 +282,7 @@ const VendorDashboard: React.FC = () => {
           </div>
           <div className="card-content">
             <div className="space-y-4">
-              {menuItems.map((item) => (
+              {menuItems.map((item: any) => (
                 <div key={item._id} className="border border-gray-200 rounded-lg p-4">
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex-1">

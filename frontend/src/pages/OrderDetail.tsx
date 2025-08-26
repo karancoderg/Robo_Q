@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useQuery } from 'react-query';
-import { orderAPI } from '@/services/api';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import {
   ArrowLeftIcon,
@@ -145,6 +143,22 @@ const OrderDetail: React.FC = () => {
   // Find the specific order by ID
   const order = mockOrders.find(o => o._id === orderId);
 
+  if (!order) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900">Order Not Found</h1>
+            <p className="text-gray-600 mt-2">The order you're looking for doesn't exist.</p>
+            <Link to="/orders" className="btn btn-primary mt-4">
+              Back to Orders
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const [otpInput, setOtpInput] = useState('');
   const [confirmingDelivery, setConfirmingDelivery] = useState(false);
 
@@ -199,7 +213,7 @@ const OrderDetail: React.FC = () => {
   };
 
   const timelineSteps = getTimelineSteps(order);
-  const vendor = order?.vendorId;
+  const vendor = order.vendorId;
 
   const handleConfirmDelivery = async () => {
     if (!otpInput || otpInput.length !== 6) {

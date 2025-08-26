@@ -168,7 +168,7 @@ const VendorOrders: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-6">
-          {filteredOrders.map((order) => (
+          {filteredOrders.map((order: any) => (
             <div key={order._id} className="card hover:shadow-md transition-shadow">
               <div className="card-content">
                 <div className="flex items-start justify-between mb-4">
@@ -214,7 +214,7 @@ const VendorOrders: React.FC = () => {
                   <div>
                     <h4 className="font-medium text-gray-700 mb-2">Order Items</h4>
                     <div className="space-y-2">
-                      {order.items.map((item, index) => (
+                      {order.items.map((item: any, index: number) => (
                         <div key={index} className="flex justify-between text-sm">
                           <span>{item.quantity}x {item.name}</span>
                           <span className="font-medium">${item.totalPrice.toFixed(2)}</span>

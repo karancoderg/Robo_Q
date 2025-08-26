@@ -34,7 +34,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      const socketInstance = io(import.meta.env.VITE_API_URL || 'http://localhost:5000', {
+      const socketInstance = io((import.meta as any).env.VITE_API_URL || 'http://localhost:5000', {
         transports: ['websocket'],
       });
 

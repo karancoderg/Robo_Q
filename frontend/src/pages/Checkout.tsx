@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { orderAPI } from '@/services/api';
@@ -20,8 +20,9 @@ interface CheckoutFormData {
 
 const Checkout: React.FC = () => {
   const { items, total, clearCart } = useCart();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
 
   const { register, handleSubmit, formState: { errors } } = useForm<CheckoutFormData>({
@@ -38,6 +39,12 @@ const Checkout: React.FC = () => {
 
   if (items.length === 0) {
     navigate('/cart');
+    return null;
+  }
+
+  // Simple authentication check
+  if (!isAuthenticated || !user) {
+    navigate('/login', { state: { from: location } });
     return null;
   }
 
@@ -88,209 +95,198 @@ const Checkout: React.FC = () => {
       toast.success('Orders placed successfully!');
       navigate('/orders');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to place order');
+      console.error('Order placement error:', error);
+      
+      if (error.response?.status === 401) {
+        toast.error('Your session has expired. Please log in again.');
+        navigate('/login', { state: { from: location } });
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to place order');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Checkout</h1>
-        <p className="text-gray-600">Review your order and delivery details</p>
-      </div>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Checkout</h1>
+          <p className="mt-2 text-gray-600">Complete your order</p>
+        </div>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Order Details */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Delivery Address */}
-            <div className="card">
-              <div className="card-header">
-                <h2 className="card-title flex items-center">
-                  <MapPinIcon className="h-5 w-5 mr-2" />
-                  Delivery Address
-                </h2>
+        {/* Order Summary */}
+        <div className="mb-8 bg-white rounded-lg shadow-sm p-6">
+          <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
+          {Object.entries(itemsByVendor).map(([vendorId, vendorData]: [string, any]) => (
+            <div key={vendorId} className="mb-6 last:mb-0">
+              <h3 className="font-medium text-gray-900 mb-3">
+                {vendorData.vendor?.name || `Vendor ${vendorId}`}
+              </h3>
+              <div className="space-y-3">
+                {vendorData.items.map((cartItem: any, index: number) => (
+                  <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-900">{cartItem.item.name}</h4>
+                      <p className="text-sm text-gray-600">Quantity: {cartItem.quantity}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium text-gray-900">
+                        ${(cartItem.item.price * cartItem.quantity).toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="card-content">
-                <div className="space-y-4">
-                  <div>
+            </div>
+          ))}
+          <div className="border-t border-gray-200 pt-4 mt-6">
+            <div className="flex justify-between items-center">
+              <span className="text-lg font-semibold text-gray-900">Total</span>
+              <span className="text-lg font-semibold text-gray-900">${total.toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Order Details */}
+            <div className="lg:col-span-2 space-y-8">
+              {/* Delivery Address */}
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center mb-4">
+                  <MapPinIcon className="h-5 w-5 text-primary-600 mr-2" />
+                  <h2 className="text-xl font-semibold text-gray-900">Delivery Address</h2>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Street Address *
+                      Street Address
                     </label>
                     <input
                       type="text"
-                      className="input w-full"
                       {...register('deliveryAddress.street', { required: 'Street address is required' })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      placeholder="123 Main Street"
                     />
                     {errors.deliveryAddress?.street && (
-                      <p className="text-red-600 text-sm mt-1">{errors.deliveryAddress.street.message}</p>
+                      <p className="mt-1 text-sm text-red-600">{errors.deliveryAddress.street.message}</p>
                     )}
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        City *
-                      </label>
-                      <input
-                        type="text"
-                        className="input w-full"
-                        {...register('deliveryAddress.city', { required: 'City is required' })}
-                      />
-                      {errors.deliveryAddress?.city && (
-                        <p className="text-red-600 text-sm mt-1">{errors.deliveryAddress.city.message}</p>
-                      )}
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        State *
-                      </label>
-                      <input
-                        type="text"
-                        className="input w-full"
-                        {...register('deliveryAddress.state', { required: 'State is required' })}
-                      />
-                      {errors.deliveryAddress?.state && (
-                        <p className="text-red-600 text-sm mt-1">{errors.deliveryAddress.state.message}</p>
-                      )}
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      City
+                    </label>
+                    <input
+                      type="text"
+                      {...register('deliveryAddress.city', { required: 'City is required' })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      placeholder="New York"
+                    />
+                    {errors.deliveryAddress?.city && (
+                      <p className="mt-1 text-sm text-red-600">{errors.deliveryAddress.city.message}</p>
+                    )}
                   </div>
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      ZIP Code *
+                      State
                     </label>
                     <input
                       type="text"
-                      className="input w-full"
+                      {...register('deliveryAddress.state', { required: 'State is required' })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      placeholder="NY"
+                    />
+                    {errors.deliveryAddress?.state && (
+                      <p className="mt-1 text-sm text-red-600">{errors.deliveryAddress.state.message}</p>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      ZIP Code
+                    </label>
+                    <input
+                      type="text"
                       {...register('deliveryAddress.zipCode', { required: 'ZIP code is required' })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      placeholder="10001"
                     />
                     {errors.deliveryAddress?.zipCode && (
-                      <p className="text-red-600 text-sm mt-1">{errors.deliveryAddress.zipCode.message}</p>
+                      <p className="mt-1 text-sm text-red-600">{errors.deliveryAddress.zipCode.message}</p>
                     )}
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Order Notes */}
-            <div className="card">
-              <div className="card-header">
-                <h2 className="card-title">Special Instructions</h2>
-              </div>
-              <div className="card-content">
+              {/* Special Instructions */}
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Special Instructions</h2>
                 <textarea
-                  className="input w-full h-24 resize-none"
-                  placeholder="Any special delivery instructions..."
                   {...register('notes')}
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="Any special delivery instructions..."
                 />
               </div>
             </div>
 
-            {/* Payment Method */}
-            <div className="card">
-              <div className="card-header">
-                <h2 className="card-title flex items-center">
-                  <CreditCardIcon className="h-5 w-5 mr-2" />
-                  Payment Method
-                </h2>
-              </div>
-              <div className="card-content">
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div className="text-2xl">💳</div>
-                    <div>
-                      <p className="font-medium text-green-800">Cash on Delivery</p>
-                      <p className="text-sm text-green-600">Pay when the robot arrives</p>
+            {/* Payment Summary */}
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-lg shadow-sm p-6 sticky top-8">
+                <div className="flex items-center mb-4">
+                  <CreditCardIcon className="h-5 w-5 text-primary-600 mr-2" />
+                  <h2 className="text-xl font-semibold text-gray-900">Payment</h2>
+                </div>
+                
+                <div className="space-y-3 mb-6">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Subtotal</span>
+                    <span className="font-medium">${total.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Delivery Fee</span>
+                    <span className="font-medium">$2.99</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Tax</span>
+                    <span className="font-medium">${(total * 0.08).toFixed(2)}</span>
+                  </div>
+                  <div className="border-t border-gray-200 pt-3">
+                    <div className="flex justify-between">
+                      <span className="text-lg font-semibold">Total</span>
+                      <span className="text-lg font-semibold">${(total + 2.99 + (total * 0.08)).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
 
-          {/* Order Summary */}
-          <div className="lg:col-span-1">
-            <div className="card sticky top-4">
-              <div className="card-header">
-                <h2 className="card-title">Order Summary</h2>
-              </div>
-              <div className="card-content">
-                <div className="space-y-4">
-                  {/* Items by Vendor */}
-                  {Object.entries(itemsByVendor).map(([vendorId, vendorData]: [string, any]) => (
-                    <div key={vendorId} className="border-b border-gray-200 pb-4 last:border-b-0">
-                      <h3 className="font-medium text-gray-900 mb-2">
-                        {vendorData.vendor?.businessName || 'Vendor'}
-                      </h3>
-                      <div className="space-y-2">
-                        {vendorData.items.map((cartItem: any) => (
-                          <div key={cartItem.item._id} className="flex justify-between text-sm">
-                            <span className="text-gray-600">
-                              {cartItem.quantity}x {cartItem.item.name}
-                            </span>
-                            <span className="font-medium">
-                              ${(cartItem.item.price * cartItem.quantity).toFixed(2)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-
-                  <div className="space-y-2 pt-4">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Subtotal</span>
-                      <span className="font-medium">${total.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Delivery Fee</span>
-                      <span className="font-medium text-green-600">FREE 🤖</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Service Fee</span>
-                      <span className="font-medium">$0.00</span>
-                    </div>
-                    <hr />
-                    <div className="flex justify-between text-lg font-bold">
-                      <span>Total</span>
-                      <span className="text-primary-600">${total.toFixed(2)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="card-footer">
                 <button
                   type="submit"
                   disabled={loading}
-                  className="btn btn-primary btn-lg w-full"
+                  className="w-full bg-primary-600 text-white py-3 px-4 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  {loading ? <LoadingSpinner size="sm" /> : 'Place Order'}
+                  {loading ? (
+                    <div className="flex items-center justify-center">
+                      <LoadingSpinner size="sm" />
+                      <span className="ml-2">Placing Order...</span>
+                    </div>
+                  ) : (
+                    'Place Order'
+                  )}
                 </button>
-              </div>
-            </div>
 
-            {/* Delivery Info */}
-            <div className="card mt-6">
-              <div className="card-content">
-                <div className="text-center">
-                  <div className="text-4xl mb-3">🤖</div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Robot Delivery</h3>
-                  <p className="text-sm text-gray-600">
-                    Estimated delivery time: 20-30 minutes
-                  </p>
-                  <p className="text-xs text-gray-500 mt-2">
-                    You'll receive an OTP to confirm delivery
-                  </p>
-                </div>
+                <p className="mt-4 text-xs text-gray-500 text-center">
+                  By placing your order, you agree to our Terms of Service and Privacy Policy.
+                </p>
               </div>
             </div>
           </div>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 };

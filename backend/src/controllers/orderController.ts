@@ -267,11 +267,11 @@ export const getOrderTracking = asyncHandler(async (req: AuthRequest, res: Respo
     estimatedDeliveryTime: order.estimatedDeliveryTime,
     deliveryAddress: order.deliveryAddress,
     vendorAddress: order.vendorAddress,
-    robot: order.robotId ? {
-      name: order.robotId.name,
-      status: order.robotId.status,
-      currentLocation: order.robotId.currentLocation,
-      batteryLevel: order.robotId.batteryLevel
+    robot: order.robotId && typeof order.robotId === 'object' ? {
+      name: (order.robotId as any).name,
+      status: (order.robotId as any).status,
+      currentLocation: (order.robotId as any).currentLocation,
+      batteryLevel: (order.robotId as any).batteryLevel
     } : null,
     timeline: [
       { status: 'pending', timestamp: order.createdAt, completed: true },

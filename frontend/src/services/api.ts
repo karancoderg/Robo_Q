@@ -7,16 +7,6 @@ interface ApiResponse<T = any> {
   data?: T;
 }
 
-interface PaginatedResponse<T> {
-  items: T[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    pages: number;
-  };
-}
-
 interface User {
   id: string;
   name: string;
@@ -34,15 +24,24 @@ interface LoginResponse {
 
 // Create axios instance
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
   timeout: 10000,
 });
 
 // Request interceptor to add auth token
 api.interceptors.request.use((config) => {
+  // Special handling for Google OAuth - it doesn't need our access token
+  if (config.url?.includes('google-auth') || config.url?.includes('/auth/google')) {
+    console.log('API Request:', config.method?.toUpperCase(), config.url, '(Google OAuth - no token needed)');
+    return config;
+  }
+
   const token = localStorage.getItem('accessToken');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+    console.log('API Request:', config.method?.toUpperCase(), config.url, 'with token');
+  } else {
+    console.log('API Request:', config.method?.toUpperCase(), config.url, 'WITHOUT TOKEN');
   }
   return config;
 });
@@ -66,24 +65,25 @@ api.interceptors.response.use(
           if (refreshResponse.data.success) {
             const { accessToken, refreshToken: newRefreshToken } = refreshResponse.data.data;
             localStorage.setItem('accessToken', accessToken);
-            localStorage.setItem('refreshToken', newRefreshToken);
+            if (newRefreshToken) {
+              localStorage.setItem('refreshToken', newRefreshToken);
+            }
             
             // Retry the original request with new token
             originalRequest.headers.Authorization = `Bearer ${accessToken}`;
             return api(originalRequest);
           }
         } catch (refreshError) {
-          // Refresh failed, redirect to login
+          console.error('Token refresh failed:', refreshError);
+          // Only clear tokens, don't redirect here - let components handle it
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
-          window.location.href = '/login';
           return Promise.reject(refreshError);
         }
       } else {
-        // No refresh token, redirect to login
+        // No refresh token, clear tokens but don't redirect
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
       }
     }
     
@@ -139,7 +139,7 @@ export const authAPI = {
   getProfile: (): Promise<AxiosResponse<ApiResponse<{ user: User }>>> =>
     api.get('/auth/profile'),
 
-  updateProfile: (data: Partial<User>): Promise<AxiosResponse<ApiResponse<{ user: User }>>> =>
+  updateProfile: (data: any): Promise<AxiosResponse<ApiResponse<{ user: User }>>> =>
     api.put('/auth/profile', data),
 
   logout: (): Promise<AxiosResponse<ApiResponse>> =>

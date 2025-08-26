@@ -1,5 +1,5 @@
 import { Document } from 'mongoose';
-import { Request } from 'express';
+import { Request, Response, NextFunction } from 'express';
 
 export interface IUser extends Document {
   _id: string;
@@ -23,6 +23,7 @@ export interface IUser extends Document {
   };
   createdAt: Date;
   updatedAt: Date;
+  comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
 export interface IVendor extends Document {
@@ -169,6 +170,9 @@ export interface ApiResponse<T = any> {
 export interface AuthRequest extends Request {
   user?: IUser;
 }
+
+// Type helper for route handlers
+export type AuthRequestHandler = (req: AuthRequest, res: Response, next: NextFunction) => Promise<void> | void;
 
 export interface PaginationQuery {
   page?: number;

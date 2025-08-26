@@ -3,16 +3,17 @@ import { verifyAccessToken } from '../utils/jwt';
 import User from '../models/User';
 import { AuthRequest } from '../types';
 
-export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: 'Access token is required',
         code: 'TOKEN_MISSING'
       });
+      return;
     }
 
     const token = authHeader.substring(7);
@@ -22,11 +23,12 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
       
       const user = await User.findById(decoded.userId);
       if (!user) {
-        return res.status(401).json({
+        res.status(401).json({
           success: false,
           message: 'Invalid token - user not found',
           code: 'USER_NOT_FOUND'
         });
+        return;
       }
 
       req.user = user;
@@ -34,55 +36,61 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     } catch (tokenError: any) {
       // Handle specific JWT errors
       if (tokenError.name === 'TokenExpiredError') {
-        return res.status(401).json({
+        res.status(401).json({
           success: false,
           message: 'Access token has expired',
           code: 'TOKEN_EXPIRED'
         });
+        return;
       } else if (tokenError.name === 'JsonWebTokenError') {
-        return res.status(401).json({
+        res.status(401).json({
           success: false,
           message: 'Invalid access token',
           code: 'TOKEN_INVALID'
         });
+        return;
       } else {
-        return res.status(401).json({
+        res.status(401).json({
           success: false,
           message: 'Token verification failed',
           code: 'TOKEN_VERIFICATION_FAILED'
         });
+        return;
       }
     }
   } catch (error) {
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: 'Authentication error',
       code: 'AUTH_ERROR'
     });
+    return;
   }
 };
 
 export const authorize = (...roles: string[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction) => {
+  return (req: AuthRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: 'Authentication required'
       });
+      return;
     }
 
     if (!roles.includes(req.user.role)) {
-      return res.status(403).json({
+      res.status(403).json({
         success: false,
         message: 'Insufficient permissions'
       });
+      return;
     }
 
     next();
   };
 };
 
-export const optionalAuth = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const optionalAuth = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
     

@@ -6,10 +6,10 @@ import { asyncHandler } from '../middleware/errorHandler';
 const router = Router();
 
 // All routes require authentication
-router.use(authenticate);
+router.use(authenticate as any);
 
 // Get all robots (admin only)
-router.get('/', authorize('admin'), asyncHandler(async (req, res) => {
+router.get('/', authorize('admin') as any, asyncHandler(async (req: any, res: any) => {
   const robots = await robotService.getAllRobots();
   
   res.json({
@@ -19,7 +19,7 @@ router.get('/', authorize('admin'), asyncHandler(async (req, res) => {
 }));
 
 // Get robot status
-router.get('/:robotId', asyncHandler(async (req, res) => {
+router.get('/:robotId', asyncHandler(async (req: any, res: any) => {
   const { robotId } = req.params;
   const robot = await robotService.getRobotStatus(robotId);
   
@@ -37,7 +37,7 @@ router.get('/:robotId', asyncHandler(async (req, res) => {
 }));
 
 // Update robot location (robot API or admin)
-router.put('/:robotId/location', authorize('admin'), asyncHandler(async (req, res) => {
+router.put('/:robotId/location', authorize('admin') as any, asyncHandler(async (req: any, res: any) => {
   const { robotId } = req.params;
   const { lat, lng } = req.body;
   

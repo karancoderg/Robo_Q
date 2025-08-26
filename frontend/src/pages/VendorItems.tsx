@@ -11,8 +11,6 @@ import {
   PlusIcon,
   PencilIcon,
   TrashIcon,
-  EyeIcon,
-  EyeSlashIcon,
 } from '@heroicons/react/24/outline';
 
 const VendorItems: React.FC = () => {
@@ -164,7 +162,7 @@ const VendorItems: React.FC = () => {
         <div className="card">
           <div className="card-content text-center">
             <p className="text-2xl font-bold text-green-600">
-              {menuItems.filter(item => item.isAvailable).length}
+              {menuItems.filter((item: any) => item.isAvailable).length}
             </p>
             <p className="text-sm text-gray-600">Available</p>
           </div>
@@ -172,7 +170,7 @@ const VendorItems: React.FC = () => {
         <div className="card">
           <div className="card-content text-center">
             <p className="text-2xl font-bold text-red-600">
-              {menuItems.filter(item => !item.isAvailable).length}
+              {menuItems.filter((item: any) => !item.isAvailable).length}
             </p>
             <p className="text-sm text-gray-600">Unavailable</p>
           </div>
@@ -180,7 +178,7 @@ const VendorItems: React.FC = () => {
         <div className="card">
           <div className="card-content text-center">
             <p className="text-2xl font-bold text-blue-600">
-              ${(menuItems.reduce((sum, item) => sum + item.price, 0) / menuItems.length).toFixed(2)}
+              ${(menuItems.reduce((sum: any, item: any) => sum + item.price, 0) / menuItems.length).toFixed(2)}
             </p>
             <p className="text-sm text-gray-600">Avg Price</p>
           </div>
@@ -209,7 +207,7 @@ const VendorItems: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredItems.map((item) => (
+          {filteredItems.map((item: any) => (
             <div key={item._id} className="card hover:shadow-md transition-shadow">
               <div className="card-header">
                 <div className="flex justify-between items-start">
@@ -236,7 +234,7 @@ const VendorItems: React.FC = () => {
                 </p>
                 
                 <div className="flex flex-wrap gap-1 mb-4">
-                  {item.tags.slice(0, 3).map((tag) => (
+                  {item.tags.slice(0, 3).map((tag: any) => (
                     <span key={tag} className="badge badge-outline text-xs">
                       {tag}
                     </span>

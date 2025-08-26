@@ -26,7 +26,7 @@ interface RegisterFormData {
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { setUserFromRegistration } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -40,10 +40,12 @@ const Register: React.FC = () => {
 
   const registerMutation = useMutation(authAPI.register, {
     onSuccess: (response) => {
-      const { user, accessToken } = response.data.data;
-      login(user, accessToken);
-      toast.success('Registration successful! Welcome to RoboQ!');
-      navigate('/dashboard');
+      const data = response.data?.data;
+      if (data?.user && data?.accessToken) {
+        setUserFromRegistration(data.user, data.accessToken);
+        toast.success('Registration successful! Welcome to RoboQ!');
+        navigate('/dashboard');
+      }
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Registration failed');

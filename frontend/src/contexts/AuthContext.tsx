@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, LoginResponse } from '@/types';
+import { User } from '@/types';
 import { authAPI } from '@/services/api';
 import toast from 'react-hot-toast';
 
@@ -12,7 +12,10 @@ interface AuthContextType {
   loginWithGoogle: (credential: string) => Promise<boolean>;
   register: (data: RegisterData) => Promise<boolean>;
   logout: () => void;
+  clearAuth: () => void;
   updateProfile: (data: Partial<User>) => Promise<boolean>;
+  setUserFromRegistration: (userData: User, accessToken: string) => void;
+  checkAuthStatus: () => Promise<boolean>;
   isAuthenticated: boolean;
   isVendor: boolean;
   isUser: boolean;
@@ -24,7 +27,7 @@ interface RegisterData {
   email: string;
   password: string;
   phone?: string;
-  role?: string;
+  role?: 'user' | 'vendor';
   address?: any;
 }
 
@@ -59,6 +62,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setUser(response.data.data!.user);
           }
         } catch (error: any) {
+          console.error('Profile fetch error:', error);
           // If token is expired or invalid, try to refresh
           if (error.response?.status === 401) {
             try {
@@ -66,7 +70,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               if (refreshResponse.data.success) {
                 const { accessToken: newAccessToken, refreshToken: newRefreshToken } = refreshResponse.data.data!;
                 localStorage.setItem('accessToken', newAccessToken);
-                localStorage.setItem('refreshToken', newRefreshToken);
+                if (newRefreshToken) {
+                  localStorage.setItem('refreshToken', newRefreshToken);
+                }
                 
                 // Try to get profile again with new token
                 const profileResponse = await authAPI.getProfile();
@@ -77,13 +83,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 throw new Error('Refresh failed');
               }
             } catch (refreshError) {
-              // If refresh fails, clear tokens and logout
+              console.error('Token refresh failed during init:', refreshError);
+              // If refresh fails, clear tokens but don't show error to user
               localStorage.removeItem('accessToken');
               localStorage.removeItem('refreshToken');
               setUser(null);
             }
           } else {
             // For other errors, clear tokens
+            console.error('Non-401 error during profile fetch:', error);
             localStorage.removeItem('accessToken');
             localStorage.removeItem('refreshToken');
             setUser(null);
@@ -154,14 +162,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await authAPI.loginWithGoogle({ credential });
       if (response.data.success) {
         const { user, accessToken, refreshToken } = response.data.data!;
+        
+        // Ensure both tokens are stored
         localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
+        if (refreshToken) {
+          localStorage.setItem('refreshToken', refreshToken);
+        }
+        
         setUser(user);
         toast.success('Google login successful!');
         return true;
       }
       return false;
     } catch (error: any) {
+      console.error('Google OAuth error:', error);
       toast.error(error.response?.data?.message || 'Google login failed');
       return false;
     }
@@ -169,7 +183,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const register = async (data: RegisterData): Promise<boolean> => {
     try {
-      const response = await authAPI.register(data);
+      const registerData = {
+        ...data,
+        role: data.role || 'user' as 'user' | 'vendor'
+      };
+      const response = await authAPI.register(registerData);
       if (response.data.success) {
         const { user, accessToken, refreshToken } = response.data.data!;
         localStorage.setItem('accessToken', accessToken);
@@ -185,16 +203,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  // Helper function to safely clear authentication
+  const clearAuth = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     setUser(null);
+  };
+
+  const logout = () => {
+    clearAuth();
     toast.success('Logged out successfully');
   };
 
   const updateProfile = async (data: Partial<User>): Promise<boolean> => {
     try {
-      const response = await authAPI.updateProfile(data);
+      const updateData = { ...data };
+      // Filter out admin role for frontend updates
+      if (updateData.role === 'admin') {
+        delete updateData.role;
+      }
+      const response = await authAPI.updateProfile(updateData);
       if (response.data.success) {
         setUser(response.data.data!.user);
         toast.success('Profile updated successfully');
@@ -207,6 +235,86 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Helper function to check if user is still authenticated
+  const checkAuthStatus = async (): Promise<boolean> => {
+    const token = localStorage.getItem('accessToken');
+    const refreshToken = localStorage.getItem('refreshToken');
+    
+    if (!token || !refreshToken) {
+      return false;
+    }
+    
+    try {
+      const response = await authAPI.getProfile();
+      if (response.data.success) {
+        setUser(response.data.data!.user);
+        return true;
+      }
+      return false;
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        // Try to refresh token
+        try {
+          const refreshResponse = await authAPI.refreshToken();
+          if (refreshResponse.data.success) {
+            const { accessToken: newAccessToken, refreshToken: newRefreshToken } = refreshResponse.data.data!;
+            localStorage.setItem('accessToken', newAccessToken);
+            if (newRefreshToken) {
+              localStorage.setItem('refreshToken', newRefreshToken);
+            }
+            
+            // Try to get profile again
+            const profileResponse = await authAPI.getProfile();
+            if (profileResponse.data.success) {
+              setUser(profileResponse.data.data!.user);
+              return true;
+            }
+          }
+        } catch (refreshError) {
+          console.error('Token refresh failed:', refreshError);
+        }
+      }
+      return false;
+    }
+  };
+
+  // PERMANENT FIX: Simple and reliable session persistence
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      // Only clear user when access token is explicitly removed by logout
+      if (e.key === 'accessToken' && !e.newValue && e.oldValue) {
+        console.log('Access token removed from storage, logging out user');
+        setUser(null);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
+
+  // Periodically check auth status for Google OAuth users
+  useEffect(() => {
+    if (user && user.email) {
+      const interval = setInterval(async () => {
+        try {
+          await checkAuthStatus();
+        } catch (error) {
+          console.error('Periodic auth check failed:', error);
+        }
+      }, 5 * 60 * 1000); // Check every 5 minutes
+
+      return () => clearInterval(interval);
+    }
+  }, [user, checkAuthStatus]);
+
+  const setUserFromRegistration = (userData: User, accessToken: string) => {
+    setUser(userData);
+    localStorage.setItem('accessToken', accessToken);
+  };
+
   const value: AuthContextType = {
     user,
     loading,
@@ -216,8 +324,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loginWithGoogle,
     register,
     logout,
+    clearAuth,
     updateProfile,
-    isAuthenticated: !!user,
+    setUserFromRegistration,
+    checkAuthStatus,
+    isAuthenticated: !!user, // Simple: if user exists, they're authenticated
     isVendor: user?.role === 'vendor',
     isUser: user?.role === 'user',
     isAdmin: user?.role === 'admin',

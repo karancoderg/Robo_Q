@@ -36,13 +36,13 @@ router.post('/refresh-token', refreshToken);
 // );
 
 // Protected routes
-router.use(authenticate);
+router.use(authenticate as any);
 
-router.get('/profile', getProfile);
-router.put('/profile', updateProfile);
-router.post('/verify-email', validate(schemas.verifyOTP), verifyEmail);
-router.post('/resend-otp', resendOTP);
-router.post('/change-password', changePassword);
+router.get('/profile', getProfile as any);
+router.put('/profile', updateProfile as any);
+router.post('/verify-email', validate(schemas.verifyOTP), verifyEmail as any);
+router.post('/resend-otp', resendOTP as any);
+router.post('/change-password', changePassword as any);
 
 // Export router
 export default router;

@@ -39,7 +39,7 @@ interface VendorProfileFormData {
 }
 
 const VendorProfile: React.FC = () => {
-  const { user, updateProfile } = useAuth();
+  const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
@@ -74,7 +74,7 @@ const VendorProfile: React.FC = () => {
     defaultValues: vendorData
   });
 
-  const onSubmit = async (data: VendorProfileFormData) => {
+  const onSubmit = async (_data: VendorProfileFormData) => {
     setLoading(true);
     // Simulate API call
     setTimeout(() => {
