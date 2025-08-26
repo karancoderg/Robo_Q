@@ -1,0 +1,219 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+@layer components {
+  /* Existing component styles... */
+  
+  /* Order Tracking Animations */
+  .tracking-pulse {
+    animation: tracking-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  .robot-move {
+    transition: all 2s ease-in-out;
+  }
+  
+  .route-dash {
+    stroke-dasharray: 10, 5;
+    animation: route-flow 3s linear infinite;
+  }
+}
+
+@keyframes tracking-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes route-flow {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: 30;
+  }
+}
+
+@layer base {
+  body {
+    font-family: 'Inter', sans-serif;
+    @apply bg-gray-50 text-gray-900;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+  }
+  
+  .btn-primary {
+    @apply btn bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800;
+  }
+  
+  .btn-secondary {
+    @apply btn bg-gray-100 text-gray-900 hover:bg-gray-200 active:bg-gray-300;
+  }
+  
+  .btn-outline {
+    @apply btn border border-primary-600 text-primary-600 hover:bg-primary-50 active:bg-primary-100;
+  }
+  
+  .btn-ghost {
+    @apply btn text-gray-700 hover:bg-gray-100 active:bg-gray-200;
+  }
+  
+  .btn-sm {
+    @apply h-8 px-3 text-xs;
+  }
+  
+  .btn-md {
+    @apply h-10 px-4 py-2;
+  }
+  
+  .btn-lg {
+    @apply h-12 px-6 text-base;
+  }
+  
+  .input {
+    @apply flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  
+  .card {
+    @apply rounded-lg border border-gray-200 bg-white shadow-sm;
+  }
+  
+  .card-header {
+    @apply flex flex-col space-y-1.5 p-6;
+  }
+  
+  .card-title {
+    @apply text-lg font-semibold leading-none tracking-tight;
+  }
+  
+  .card-description {
+    @apply text-sm text-gray-600;
+  }
+  
+  .card-content {
+    @apply p-6 pt-0;
+  }
+  
+  .card-footer {
+    @apply flex items-center p-6 pt-0;
+  }
+  
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+  
+  .badge-primary {
+    @apply badge bg-primary-100 text-primary-800;
+  }
+  
+  .badge-secondary {
+    @apply badge bg-gray-100 text-gray-800;
+  }
+  
+  .badge-success {
+    @apply badge bg-green-100 text-green-800;
+  }
+  
+  .badge-warning {
+    @apply badge bg-yellow-100 text-yellow-800;
+  }
+  
+  .badge-error {
+    @apply badge bg-red-100 text-red-800;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400;
+}
+
+/* Loading animation */
+.loading-spinner {
+  @apply animate-spin rounded-full border-2 border-gray-300 border-t-primary-600;
+}
+
+/* Fade in animation */
+.fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Status colors */
+.status-pending {
+  @apply bg-yellow-100 text-yellow-800;
+}
+
+.status-approved {
+  @apply bg-blue-100 text-blue-800;
+}
+
+.status-rejected {
+  @apply bg-red-100 text-red-800;
+}
+
+.status-assigned {
+  @apply bg-purple-100 text-purple-800;
+}
+
+.status-picking-up {
+  @apply bg-orange-100 text-orange-800;
+}
+
+.status-delivering {
+  @apply bg-indigo-100 text-indigo-800;
+}
+
+.status-delivered {
+  @apply bg-green-100 text-green-800;
+}
+
+.status-cancelled {
+  @apply bg-gray-100 text-gray-800;
+}
