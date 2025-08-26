@@ -25,7 +25,7 @@ interface LoginResponse {
 // Create axios instance
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
-  timeout: 10000,
+  timeout: 30000, // Increased to 30 seconds for Render.com cold starts
 });
 
 // Request interceptor to add auth token
