@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { calculatePricing, formatCurrency, isDeliveryFree, PRICING_CONFIG } from '@/utils/pricing';
 import {
   MinusIcon,
   PlusIcon,
@@ -13,6 +14,10 @@ const Cart: React.FC = () => {
   const { items, total, itemCount, updateQuantity, removeItem, clearCart } = useCart();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  // Calculate pricing breakdown
+  const pricing = calculatePricing(total);
+  const deliveryFreeStatus = isDeliveryFree(total);
 
   const handleQuantityChange = (itemId: string, newQuantity: number) => {
     if (newQuantity <= 0) {
@@ -144,20 +149,29 @@ const Cart: React.FC = () => {
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Subtotal ({itemCount} items)</span>
-                  <span className="font-medium">₹{total.toFixed(2)}</span>
+                  <span className="font-medium">{formatCurrency(pricing.subtotal)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Delivery Fee</span>
-                  <span className="font-medium text-green-600">FREE 🤖</span>
+                  {deliveryFreeStatus ? (
+                    <span className="font-medium text-green-600">FREE 🤖</span>
+                  ) : (
+                    <span className="font-medium">{formatCurrency(pricing.deliveryFee)}</span>
+                  )}
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Service Fee</span>
-                  <span className="font-medium">₹0.00</span>
+                  <span className="text-gray-600">Tax (GST 18%)</span>
+                  <span className="font-medium">{formatCurrency(pricing.tax)}</span>
                 </div>
+                {!deliveryFreeStatus && total < PRICING_CONFIG.FREE_DELIVERY_THRESHOLD && (
+                  <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
+                    💡 Add {formatCurrency(PRICING_CONFIG.FREE_DELIVERY_THRESHOLD - total)} more for free delivery!
+                  </div>
+                )}
                 <hr className="my-4" />
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
-                  <span className="text-primary-600">₹{total.toFixed(2)}</span>
+                  <span className="text-primary-600">{formatCurrency(pricing.total)}</span>
                 </div>
               </div>
             </div>

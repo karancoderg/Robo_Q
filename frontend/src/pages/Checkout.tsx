@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import AddressSelector from '@/components/AddressSelector';
 import { Address } from '@/constants/addresses';
+import { calculatePricing, formatCurrency, isDeliveryFree, PRICING_CONFIG } from '@/utils/pricing';
 import toast from 'react-hot-toast';
 import { MapPinIcon, CreditCardIcon, AcademicCapIcon } from '@heroicons/react/24/outline';
 
@@ -29,6 +30,10 @@ const Checkout: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [useIITMandiAddress, setUseIITMandiAddress] = useState(false);
   const [selectedIITAddress, setSelectedIITAddress] = useState<Address | null>(null);
+
+  // Calculate pricing breakdown
+  const pricing = calculatePricing(total);
+  const deliveryFreeStatus = isDeliveryFree(total);
 
   const { register, handleSubmit, formState: { errors } } = useForm<CheckoutFormData>({
     defaultValues: {
@@ -407,20 +412,29 @@ const Checkout: React.FC = () => {
                 <div className="space-y-3 mb-6">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Subtotal</span>
-                    <span className="font-medium">₹{total.toFixed(2)}</span>
+                    <span className="font-medium">{formatCurrency(pricing.subtotal)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Delivery Fee</span>
-                    <span className="font-medium">₹29.00</span>
+                    {deliveryFreeStatus ? (
+                      <span className="font-medium text-green-600">FREE 🤖</span>
+                    ) : (
+                      <span className="font-medium">{formatCurrency(pricing.deliveryFee)}</span>
+                    )}
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Tax (GST 18%)</span>
-                    <span className="font-medium">₹{(total * 0.18).toFixed(2)}</span>
+                    <span className="font-medium">{formatCurrency(pricing.tax)}</span>
                   </div>
+                  {!deliveryFreeStatus && total < PRICING_CONFIG.FREE_DELIVERY_THRESHOLD && (
+                    <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
+                      💡 Add {formatCurrency(PRICING_CONFIG.FREE_DELIVERY_THRESHOLD - total)} more for free delivery!
+                    </div>
+                  )}
                   <div className="border-t border-gray-200 pt-3">
                     <div className="flex justify-between">
                       <span className="text-lg font-semibold">Total</span>
-                      <span className="text-lg font-semibold">₹{(total + 29.00 + (total * 0.18)).toFixed(2)}</span>
+                      <span className="text-lg font-semibold">{formatCurrency(pricing.total)}</span>
                     </div>
                   </div>
                 </div>
