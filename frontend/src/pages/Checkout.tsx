@@ -265,7 +265,7 @@ const Checkout: React.FC = () => {
                         }
                       })}
                       className="w-full pl-12 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                      placeholder="8198086300"
+                      placeholder="8554249861"
                       maxLength={10}
                     />
                   </div>

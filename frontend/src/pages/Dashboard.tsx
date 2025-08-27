@@ -83,56 +83,56 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container-responsive section-padding-sm">
       {/* Welcome Section */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
           Welcome back, {user?.name}! 👋
         </h1>
-        <p className="text-gray-600">
+        <p className="text-sm sm:text-base text-gray-600">
           Track your orders and discover new items delivered by our robot fleet
         </p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
         <div className="card">
-          <div className="card-content">
+          <div className="card-body p-3 sm:p-4 lg:p-6">
             <div className="flex items-center">
-              <div className="p-2 bg-primary-100 rounded-lg">
-                <ShoppingCartIcon className="h-6 w-6 text-primary-600" />
+              <div className="p-2 bg-primary-100 rounded-lg flex-shrink-0">
+                <ShoppingCartIcon className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-primary-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Cart Items</p>
-                <p className="text-2xl font-bold text-gray-900">{itemCount}</p>
+              <div className="ml-2 sm:ml-3 lg:ml-4 min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Cart Items</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">{itemCount}</p>
               </div>
             </div>
           </div>
         </div>
 
         <div className="card">
-          <div className="card-content">
+          <div className="card-body p-3 sm:p-4 lg:p-6">
             <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <CheckCircleIcon className="h-6 w-6 text-green-600" />
+              <div className="p-2 bg-green-100 rounded-lg flex-shrink-0">
+                <CheckCircleIcon className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-green-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Orders</p>
-                <p className="text-2xl font-bold text-gray-900">{orders.length}</p>
+              <div className="ml-2 sm:ml-3 lg:ml-4 min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Total Orders</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">{orders.length}</p>
               </div>
             </div>
           </div>
         </div>
 
         <div className="card">
-          <div className="card-content">
+          <div className="card-body p-3 sm:p-4 lg:p-6">
             <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <TruckIcon className="h-6 w-6 text-blue-600" />
+              <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
+                <TruckIcon className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-blue-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Active Orders</p>
-                <p className="text-2xl font-bold text-gray-900">
+              <div className="ml-2 sm:ml-3 lg:ml-4 min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Active Orders</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
                   {orders.filter(o => !['delivered', 'cancelled'].includes(o.status)).length}
                 </p>
               </div>
@@ -141,14 +141,14 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div className="card">
-          <div className="card-content">
+          <div className="card-body p-3 sm:p-4 lg:p-6">
             <div className="flex items-center">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <ClockIcon className="h-6 w-6 text-yellow-600" />
+              <div className="p-2 bg-yellow-100 rounded-lg flex-shrink-0">
+                <ClockIcon className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-yellow-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Cart Total</p>
-                <p className="text-2xl font-bold text-gray-900">₹{total.toFixed(2)}</p>
+              <div className="ml-2 sm:ml-3 lg:ml-4 min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Cart Total</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">₹{total.toFixed(2)}</p>
               </div>
             </div>
           </div>
@@ -156,28 +156,28 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Link to="/items" className="card hover:shadow-md transition-shadow">
-          <div className="card-content text-center py-8">
-            <div className="text-4xl mb-4">🛒</div>
-            <h3 className="text-lg font-semibold mb-2">Browse Items</h3>
-            <p className="text-gray-600">Discover food and groceries from local vendors</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <Link to="/items" className="card hover:shadow-md transition-shadow group">
+          <div className="card-body text-center py-6 sm:py-8">
+            <div className="text-3xl sm:text-4xl mb-3 sm:mb-4 group-hover:scale-110 transition-transform">🛒</div>
+            <h3 className="text-base sm:text-lg font-semibold mb-2">Browse Items</h3>
+            <p className="text-sm sm:text-base text-gray-600">Discover food and groceries from local vendors</p>
           </div>
         </Link>
 
-        <Link to="/cart" className="card hover:shadow-md transition-shadow">
-          <div className="card-content text-center py-8">
-            <div className="text-4xl mb-4">🛍️</div>
-            <h3 className="text-lg font-semibold mb-2">View Cart</h3>
-            <p className="text-gray-600">Review and checkout your selected items</p>
+        <Link to="/cart" className="card hover:shadow-md transition-shadow group">
+          <div className="card-body text-center py-6 sm:py-8">
+            <div className="text-3xl sm:text-4xl mb-3 sm:mb-4 group-hover:scale-110 transition-transform">🛍️</div>
+            <h3 className="text-base sm:text-lg font-semibold mb-2">View Cart</h3>
+            <p className="text-sm sm:text-base text-gray-600">Review and checkout your selected items</p>
           </div>
         </Link>
 
-        <Link to="/orders" className="card hover:shadow-md transition-shadow">
-          <div className="card-content text-center py-8">
-            <div className="text-4xl mb-4">📦</div>
-            <h3 className="text-lg font-semibold mb-2">Track Orders</h3>
-            <p className="text-gray-600">Monitor your deliveries in real-time</p>
+        <Link to="/orders" className="card hover:shadow-md transition-shadow group sm:col-span-2 lg:col-span-1">
+          <div className="card-body text-center py-6 sm:py-8">
+            <div className="text-3xl sm:text-4xl mb-3 sm:mb-4 group-hover:scale-110 transition-transform">📦</div>
+            <h3 className="text-base sm:text-lg font-semibold mb-2">Track Orders</h3>
+            <p className="text-sm sm:text-base text-gray-600">Monitor your deliveries in real-time</p>
           </div>
         </Link>
       </div>

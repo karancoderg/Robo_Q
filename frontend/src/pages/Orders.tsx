@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
+import axios from 'axios';
 import {
   EyeIcon,
   MapPinIcon,
@@ -63,9 +64,8 @@ const OrdersFixed: React.FC = () => {
       }
       
       // Make direct axios call
-      const axios = (await import('axios')).default;
-      
-      const response = await axios.get('http://localhost:5000/api/orders', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const response = await axios.get(`${apiUrl}/orders`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

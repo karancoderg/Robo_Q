@@ -31,31 +31,34 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+    <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-14 sm:h-16">
           {/* Logo */}
-          <div className="flex items-center">
+          <div className="flex items-center min-w-0 flex-shrink-0">
             <Link 
               to={
                 isAuthenticated 
                   ? (isVendor ? "/vendor/dashboard" : "/dashboard")
                   : "/"
               } 
-              className="flex items-center space-x-2"
+              className="flex items-center space-x-1 sm:space-x-2"
             >
-              <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">🤖</span>
+              <div className="w-7 h-7 sm:w-8 sm:h-8 bg-primary-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span className="text-white font-bold text-base sm:text-lg">🤖</span>
               </div>
-              <span className="text-xl font-bold text-gray-900">DeliveryBot</span>
+              <span className="text-lg sm:text-xl font-bold text-gray-900 truncate">
+                <span className="hidden xs:inline">DeliveryBot</span>
+                <span className="xs:hidden">DB</span>
+              </span>
             </Link>
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
+          <nav className="hidden lg:flex items-center space-x-6 xl:space-x-8">
             <Link
               to="/items"
-              className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              className="text-gray-700 hover:text-primary-600 px-2 xl:px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap"
             >
               Browse Items
             </Link>
@@ -64,13 +67,13 @@ const Header: React.FC = () => {
               <>
                 <Link
                   to="/dashboard"
-                  className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                  className="text-gray-700 hover:text-primary-600 px-2 xl:px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap"
                 >
                   Dashboard
                 </Link>
                 <Link
                   to="/orders"
-                  className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                  className="text-gray-700 hover:text-primary-600 px-2 xl:px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap"
                 >
                   My Orders
                 </Link>
@@ -81,19 +84,19 @@ const Header: React.FC = () => {
               <>
                 <Link
                   to="/vendor/dashboard"
-                  className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                  className="text-gray-700 hover:text-primary-600 px-2 xl:px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap"
                 >
-                  Vendor Dashboard
+                  <span className="hidden xl:inline">Vendor </span>Dashboard
                 </Link>
                 <Link
                   to="/vendor/orders"
-                  className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                  className="text-gray-700 hover:text-primary-600 px-2 xl:px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap"
                 >
                   Orders
                 </Link>
                 <Link
                   to="/vendor/items"
-                  className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                  className="text-gray-700 hover:text-primary-600 px-2 xl:px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap"
                 >
                   My Items
                 </Link>
@@ -102,17 +105,17 @@ const Header: React.FC = () => {
           </nav>
 
           {/* Right side actions */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4">
             {/* Cart (only for users) */}
             {isAuthenticated && isUser && (
               <Link
                 to="/cart"
-                className="relative p-2 text-gray-700 hover:text-primary-600 transition-colors"
+                className="relative p-1.5 sm:p-2 text-gray-700 hover:text-primary-600 transition-colors"
               >
-                <ShoppingCartIcon className="h-6 w-6" />
+                <ShoppingCartIcon className="h-5 w-5 sm:h-6 sm:w-6" />
                 {itemCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-primary-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {itemCount}
+                  <span className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 bg-primary-600 text-white text-xs rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center text-[10px] sm:text-xs">
+                    {itemCount > 99 ? '99+' : itemCount}
                   </span>
                 )}
               </Link>
@@ -123,19 +126,19 @@ const Header: React.FC = () => {
               <div className="relative">
                 <button
                   onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                  className="relative p-2 text-gray-700 hover:text-primary-600 transition-colors"
+                  className="relative p-1.5 sm:p-2 text-gray-700 hover:text-primary-600 transition-colors"
                 >
-                  <BellIcon className="h-6 w-6" />
+                  <BellIcon className="h-5 w-5 sm:h-6 sm:w-6" />
                   {unreadNotifications.length > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                      {unreadNotifications.length}
+                    <span className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center text-[10px] sm:text-xs">
+                      {unreadNotifications.length > 99 ? '99+' : unreadNotifications.length}
                     </span>
                   )}
                 </button>
 
                 {/* Notifications dropdown */}
                 {isNotificationsOpen && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50">
+                  <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50 max-h-[80vh] overflow-hidden">
                     <div className="py-1 max-h-96 overflow-y-auto">
                       <div className="px-4 py-2 border-b border-gray-200">
                         <h3 className="text-sm font-medium text-gray-900">Notifications</h3>
@@ -253,10 +256,10 @@ const Header: React.FC = () => {
               <div className="relative">
                 <button
                   onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                  className="flex items-center space-x-2 p-2 text-gray-700 hover:text-primary-600 transition-colors"
+                  className="flex items-center space-x-1 sm:space-x-2 p-1.5 sm:p-2 text-gray-700 hover:text-primary-600 transition-colors"
                 >
-                  <UserIcon className="h-6 w-6" />
-                  <span className="hidden md:block text-sm font-medium">
+                  <UserIcon className="h-5 w-5 sm:h-6 sm:w-6" />
+                  <span className="hidden sm:block text-sm font-medium truncate max-w-24 lg:max-w-none">
                     {user?.name}
                   </span>
                 </button>
@@ -286,16 +289,16 @@ const Header: React.FC = () => {
                 )}
               </div>
             ) : (
-              <div className="flex items-center space-x-4">
+              <div className="hidden sm:flex items-center space-x-2 md:space-x-4">
                 <Link
                   to="/login"
-                  className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                  className="text-gray-700 hover:text-primary-600 px-2 md:px-3 py-2 rounded-md text-sm font-medium transition-colors"
                 >
                   Sign in
                 </Link>
                 <Link
                   to="/register"
-                  className="btn btn-primary btn-sm"
+                  className="btn btn-primary btn-sm text-xs sm:text-sm px-3 py-1.5 sm:px-4 sm:py-2"
                 >
                   Sign up
                 </Link>
@@ -305,12 +308,12 @@ const Header: React.FC = () => {
             {/* Mobile menu button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2 text-gray-700 hover:text-primary-600 transition-colors"
+              className="lg:hidden p-1.5 sm:p-2 text-gray-700 hover:text-primary-600 transition-colors"
             >
               {isMenuOpen ? (
-                <XMarkIcon className="h-6 w-6" />
+                <XMarkIcon className="h-5 w-5 sm:h-6 sm:w-6" />
               ) : (
-                <Bars3Icon className="h-6 w-6" />
+                <Bars3Icon className="h-5 w-5 sm:h-6 sm:w-6" />
               )}
             </button>
           </div>
@@ -318,11 +321,11 @@ const Header: React.FC = () => {
 
         {/* Mobile menu */}
         {isMenuOpen && (
-          <div className="md:hidden border-t border-gray-200 py-4">
-            <div className="flex flex-col space-y-2">
+          <div className="lg:hidden border-t border-gray-200 py-3 sm:py-4 bg-white">
+            <div className="flex flex-col space-y-1">
               <Link
                 to="/items"
-                className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                className="text-gray-700 hover:text-primary-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Browse Items
@@ -332,14 +335,14 @@ const Header: React.FC = () => {
                 <>
                   <Link
                     to="/dashboard"
-                    className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                    className="text-gray-700 hover:text-primary-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium transition-colors"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Dashboard
                   </Link>
                   <Link
                     to="/orders"
-                    className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                    className="text-gray-700 hover:text-primary-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium transition-colors"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     My Orders
@@ -351,26 +354,46 @@ const Header: React.FC = () => {
                 <>
                   <Link
                     to="/vendor/dashboard"
-                    className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                    className="text-gray-700 hover:text-primary-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium transition-colors"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Vendor Dashboard
                   </Link>
                   <Link
                     to="/vendor/orders"
-                    className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                    className="text-gray-700 hover:text-primary-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium transition-colors"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Orders
                   </Link>
                   <Link
                     to="/vendor/items"
-                    className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                    className="text-gray-700 hover:text-primary-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium transition-colors"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     My Items
                   </Link>
                 </>
+              )}
+
+              {/* Mobile auth buttons */}
+              {!isAuthenticated && (
+                <div className="pt-2 border-t border-gray-200 mt-2">
+                  <Link
+                    to="/login"
+                    className="block text-gray-700 hover:text-primary-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Sign in
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="block mt-2 mx-3 btn btn-primary text-center"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Sign up
+                  </Link>
+                </div>
               )}
             </div>
           </div>
