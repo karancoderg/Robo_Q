@@ -12,7 +12,6 @@ const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [showOTPLogin, setShowOTPLogin] = useState(false);
   const [otp, setOtp] = useState('');
-  const [userId, setUserId] = useState('');
   const [showSetup, setShowSetup] = useState(false);
   const [setupUser, setSetupUser] = useState(null);
 
@@ -45,18 +44,10 @@ const Login: React.FC = () => {
     setLoading(true);
 
     const result = await loginWithOTP(email);
-    if (result.success && result.userId) {
-      setUserId(result.userId);
+    if (result.success) {
       setShowOTPLogin(true);
-    } else {
-      // If OTP login failed, it's likely because user doesn't exist
-      // Show a helpful message
-      setTimeout(() => {
-        toast.error('Account not found. Please register first or check your email address.', {
-          duration: 5000,
-        });
-      }, 100);
     }
+    // Remove duplicate error handling - AuthContext already shows the error
 
     setLoading(false);
   };
@@ -65,7 +56,7 @@ const Login: React.FC = () => {
     e.preventDefault();
     setLoading(true);
 
-    const success = await verifyLoginOTP(userId, otp);
+    const success = await verifyLoginOTP(email, otp);
     if (success) {
       navigate(from, { replace: true });
     }
@@ -115,7 +106,7 @@ const Login: React.FC = () => {
         <div>
           <div className="flex justify-center">
             <div className="w-12 h-12 bg-primary-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-2xl">🤖</span>
+              <span className="text-white font-bold text-2xl">🚀</span>
             </div>
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">

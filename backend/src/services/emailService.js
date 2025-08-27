@@ -1,13 +1,17 @@
 const nodemailer = require('nodemailer');
+const path = require('path');
 
-// Email configuration
+// Load environment variables from the correct path
+require('dotenv').config({ path: path.join(__dirname, '../../.env') });
+
+// Email configuration using correct environment variables
 const emailConfig = {
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: process.env.SMTP_PORT || 587,
-  secure: false,
+  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+  port: parseInt(process.env.EMAIL_PORT) || 587,
+  secure: false, // true for 465, false for other ports
   auth: {
-    user: process.env.SMTP_USER || 'your_email@gmail.com',
-    pass: process.env.SMTP_PASS || 'your_app_password'
+    user: process.env.EMAIL_USER || 'your_email@gmail.com',
+    pass: process.env.EMAIL_PASS || 'your_app_password'
   }
 };
 
@@ -15,14 +19,238 @@ const emailConfig = {
 let transporter = null;
 
 try {
-  if (emailConfig.auth.user !== 'your_email@gmail.com') {
-    transporter = nodemailer.createTransporter(emailConfig);
+  if (emailConfig.auth.user !== 'your_email@gmail.com' && emailConfig.auth.pass !== 'your_app_password') {
+    transporter = nodemailer.createTransport(emailConfig);
+    console.log('✅ Email service configured successfully');
+  } else {
+    console.log('⚠️ Email service not configured - using simulation mode');
   }
 } catch (error) {
-  console.log('Email not configured, email notifications will be simulated');
+  console.log('❌ Email configuration error:', error.message);
+  console.log('📧 Email notifications will be simulated');
 }
 
 class EmailService {
+  // Test email configuration
+  static async testEmailConfiguration() {
+    try {
+      if (!transporter) {
+        return {
+          success: false,
+          message: 'Email transporter not configured'
+        };
+      }
+
+      await transporter.verify();
+      console.log('✅ Email server connection verified');
+      return {
+        success: true,
+        message: 'Email configuration is working'
+      };
+    } catch (error) {
+      console.error('❌ Email configuration test failed:', error);
+      return {
+        success: false,
+        message: error.message
+      };
+    }
+  }
+
+  // Send welcome email for new Google OAuth users
+  static async sendWelcomeEmail(email, name, isGoogleUser = false) {
+    try {
+      const subject = `Welcome to NexDrop! ${isGoogleUser ? '🎉' : ''}`;
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: #4F46E5; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; }
+            .welcome-box { background: white; padding: 20px; border-radius: 8px; margin: 15px 0; text-align: center; }
+            .setup-box { background: #FEF3C7; padding: 20px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #F59E0B; }
+            .feature-list { background: white; padding: 20px; border-radius: 8px; margin: 15px 0; }
+            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+            .btn { background: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 10px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🤖 Welcome to NexDrop!</h1>
+              <p>Your autonomous delivery service</p>
+            </div>
+            <div class="content">
+              <div class="welcome-box">
+                <h2>Hello ${name}! 👋</h2>
+                <p>Thank you for joining NexDrop${isGoogleUser ? ' via Google' : ''}! We're excited to have you on board.</p>
+                ${isGoogleUser ? '<p><strong>🚀 Next Step:</strong> Complete your account setup to start ordering!</p>' : ''}
+              </div>
+              
+              ${isGoogleUser ? `
+              <div class="setup-box">
+                <h3>📋 Complete Your Setup</h3>
+                <p>To get started with NexDrop, please:</p>
+                <ul style="text-align: left; margin: 10px 0;">
+                  <li>✅ Set your password for email login</li>
+                  <li>✅ Choose your account type (Customer or Vendor)</li>
+                  <li>✅ Add your delivery address</li>
+                </ul>
+                <p><strong>This will only take 2 minutes!</strong></p>
+              </div>
+              ` : ''}
+              
+              <div class="feature-list">
+                <h3>What you can do with NexDrop:</h3>
+                <ul style="text-align: left;">
+                  <li>🍕 Order food from local restaurants</li>
+                  <li>🛒 Get groceries delivered</li>
+                  <li>🤖 Track your robot delivery in real-time</li>
+                  <li>📱 Receive SMS and email updates</li>
+                  <li>⭐ Rate and review your experience</li>
+                </ul>
+              </div>
+              
+              <div class="welcome-box">
+                <p>${isGoogleUser ? 'Complete your setup to start browsing!' : 'Ready to place your first order?'}</p>
+                <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}${isGoogleUser ? '/complete-setup' : '/items'}" class="btn">
+                  ${isGoogleUser ? 'Complete Setup' : 'Browse Items'}
+                </a>
+              </div>
+            </div>
+            <div class="footer">
+              <p>Need help? Contact us at support@nexdrop.com</p>
+              <p>This is an automated message from NexDrop.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      return await this.sendEmail(email, subject, htmlContent);
+    } catch (error) {
+      console.error('Welcome email sending failed:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  // Send password setup notification for Google users
+  static async sendPasswordSetupEmail(email, name, temporaryPassword) {
+    try {
+      const subject = 'Your DeliveryBot Password Setup';
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: #10B981; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; }
+            .password-box { background: white; padding: 20px; border-radius: 8px; margin: 15px 0; text-align: center; border: 2px solid #10B981; }
+            .warning-box { background: #FEF3C7; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #F59E0B; }
+            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+            .password { font-family: monospace; font-size: 18px; font-weight: bold; color: #059669; background: #ECFDF5; padding: 10px; border-radius: 4px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🔐 Password Setup Complete!</h1>
+              <p>You can now login with email and password</p>
+            </div>
+            <div class="content">
+              <div class="password-box">
+                <h2>Hello ${name}!</h2>
+                <p>Great news! We've set up email/password login for your Google account.</p>
+                <p><strong>Your login credentials:</strong></p>
+                <p><strong>Email:</strong> ${email}</p>
+                <p><strong>Password:</strong></p>
+                <div class="password">${temporaryPassword}</div>
+              </div>
+              
+              <div class="warning-box">
+                <h3>🔒 Important Security Notice:</h3>
+                <ul style="text-align: left;">
+                  <li>Please change this password after your first login</li>
+                  <li>You can still login using Google OAuth</li>
+                  <li>Keep your password secure and don't share it</li>
+                  <li>Use a strong, unique password for better security</li>
+                </ul>
+              </div>
+              
+              <div style="background: white; padding: 20px; border-radius: 8px; margin: 15px 0;">
+                <h3>Login Options:</h3>
+                <p>✅ <strong>Google OAuth:</strong> Click "Sign in with Google"</p>
+                <p>✅ <strong>Email/Password:</strong> Use the credentials above</p>
+              </div>
+            </div>
+            <div class="footer">
+              <p>If you didn't request this, please contact support immediately.</p>
+              <p>This is an automated message from DeliveryBot.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      return await this.sendEmail(email, subject, htmlContent);
+    } catch (error) {
+      console.error('Password setup email sending failed:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  // Generic email sending method
+  static async sendEmail(to, subject, htmlContent, textContent = null) {
+    try {
+      if (transporter && to) {
+        const mailOptions = {
+          from: `"DeliveryBot" <${emailConfig.auth.user}>`,
+          to: to,
+          subject: subject,
+          html: htmlContent
+        };
+
+        if (textContent) {
+          mailOptions.text = textContent;
+        }
+
+        const result = await transporter.sendMail(mailOptions);
+        
+        console.log(`📧 Email sent to ${to}: ${subject}`);
+        return {
+          success: true,
+          messageId: result.messageId,
+          message: 'Email sent successfully'
+        };
+      } else {
+        console.log(`📧 Email Simulation - Would send to ${to}:`);
+        console.log(`Subject: ${subject}`);
+        
+        return {
+          success: true,
+          messageId: 'simulated_' + Date.now(),
+          message: 'Email simulated successfully (SMTP not configured)'
+        };
+      }
+    } catch (error) {
+      console.error('Email sending failed:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+  // Send order confirmation email
   static async sendOrderConfirmationEmail(email, orderDetails) {
     try {
       const subject = `Order Confirmed - #${orderDetails.orderId}`;
@@ -80,32 +308,9 @@ class EmailService {
         </html>
       `;
 
-      if (transporter && email) {
-        const result = await transporter.sendMail({
-          from: `"DeliveryBot" <${emailConfig.auth.user}>`,
-          to: email,
-          subject: subject,
-          html: htmlContent
-        });
-        
-        console.log(`Confirmation email sent to ${email}:`, result.messageId);
-        return {
-          success: true,
-          messageId: result.messageId,
-          message: 'Email sent successfully'
-        };
-      } else {
-        console.log(`📧 Email Simulation - Would send to ${email}:`);
-        console.log(`Subject: ${subject}`);
-        
-        return {
-          success: true,
-          messageId: 'simulated_' + Date.now(),
-          message: 'Email simulated successfully (SMTP not configured)'
-        };
-      }
+      return await this.sendEmail(email, subject, htmlContent);
     } catch (error) {
-      console.error('Email sending failed:', error);
+      console.error('Order confirmation email sending failed:', error);
       return {
         success: false,
         error: error.message
@@ -113,6 +318,7 @@ class EmailService {
     }
   }
 
+  // Send order status update email
   static async sendOrderStatusEmail(email, orderDetails) {
     try {
       let subject = '';
@@ -188,30 +394,7 @@ class EmailService {
         </html>
       `;
 
-      if (transporter && email) {
-        const result = await transporter.sendMail({
-          from: `"DeliveryBot" <${emailConfig.auth.user}>`,
-          to: email,
-          subject: subject,
-          html: htmlContent
-        });
-        
-        console.log(`Status email sent to ${email}:`, result.messageId);
-        return {
-          success: true,
-          messageId: result.messageId,
-          message: 'Status email sent successfully'
-        };
-      } else {
-        console.log(`📧 Status Email Simulation - Would send to ${email}:`);
-        console.log(`Subject: ${subject}`);
-        
-        return {
-          success: true,
-          messageId: 'simulated_' + Date.now(),
-          message: 'Status email simulated successfully'
-        };
-      }
+      return await this.sendEmail(email, subject, htmlContent);
     } catch (error) {
       console.error('Status email sending failed:', error);
       return {

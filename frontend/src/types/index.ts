@@ -7,6 +7,7 @@ export interface User {
   avatar?: string;
   role: 'user' | 'vendor' | 'admin';
   isVerified: boolean;
+  setupCompleted?: boolean; // Track if user has completed setup
   needsPasswordSetup?: boolean;
   needsRoleSelection?: boolean;
   address?: Address | IITMandiAddress;

@@ -45,11 +45,11 @@ const Header: React.FC = () => {
               className="flex items-center space-x-1 sm:space-x-2"
             >
               <div className="w-7 h-7 sm:w-8 sm:h-8 bg-primary-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                <span className="text-white font-bold text-base sm:text-lg">🤖</span>
+                <span className="text-white font-bold text-base sm:text-lg">🚀</span>
               </div>
               <span className="text-lg sm:text-xl font-bold text-gray-900 truncate">
-                <span className="hidden xs:inline">DeliveryBot</span>
-                <span className="xs:hidden">DB</span>
+                <span className="hidden xs:inline">NexDrop</span>
+                <span className="xs:hidden">ND</span>
               </span>
             </Link>
           </div>
@@ -64,7 +64,7 @@ const Header: React.FC = () => {
             </Link>
             
             {isAuthenticated && isUser && (
-              <>
+              <React.Fragment key="desktop-user-nav">
                 <Link
                   to="/dashboard"
                   className="text-gray-700 hover:text-primary-600 px-2 xl:px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap"
@@ -77,11 +77,11 @@ const Header: React.FC = () => {
                 >
                   My Orders
                 </Link>
-              </>
+              </React.Fragment>
             )}
 
             {isAuthenticated && isVendor && (
-              <>
+              <React.Fragment key="desktop-vendor-nav">
                 <Link
                   to="/vendor/dashboard"
                   className="text-gray-700 hover:text-primary-600 px-2 xl:px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap"
@@ -100,7 +100,7 @@ const Header: React.FC = () => {
                 >
                   My Items
                 </Link>
-              </>
+              </React.Fragment>
             )}
           </nav>
 
@@ -148,7 +148,7 @@ const Header: React.FC = () => {
                           No notifications
                         </div>
                       ) : (
-                        notifications.slice(0, 5).map((notification) => {
+                        notifications.slice(0, 5).map((notification, index) => {
                           // Get notification icon based on type
                           const getNotificationIcon = (type: string) => {
                             switch (type) {
@@ -173,15 +173,18 @@ const Header: React.FC = () => {
                             }
                           };
 
+                          // Create a robust key that combines multiple unique identifiers
+                          const notificationKey = notification.id || `notification-${index}-${notification.createdAt || Date.now()}`;
+
                           return (
                             <div
-                              key={notification.id}
+                              key={notificationKey}
                               className={`px-4 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${
                                 !notification.read ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
                               }`}
                               onClick={() => {
                                 // Mark as read when clicked
-                                if (!notification.read) {
+                                if (!notification.read && notification.id) {
                                   markNotificationAsRead(notification.id);
                                 }
                                 // Navigate to relevant page if order-related
@@ -324,6 +327,7 @@ const Header: React.FC = () => {
           <div className="lg:hidden border-t border-gray-200 py-3 sm:py-4 bg-white">
             <div className="flex flex-col space-y-1">
               <Link
+                key="mobile-items"
                 to="/items"
                 className="text-gray-700 hover:text-primary-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium transition-colors"
                 onClick={() => setIsMenuOpen(false)}
@@ -332,7 +336,7 @@ const Header: React.FC = () => {
               </Link>
               
               {isAuthenticated && isUser && (
-                <>
+                <React.Fragment key="user-menu">
                   <Link
                     to="/dashboard"
                     className="text-gray-700 hover:text-primary-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium transition-colors"
@@ -347,11 +351,11 @@ const Header: React.FC = () => {
                   >
                     My Orders
                   </Link>
-                </>
+                </React.Fragment>
               )}
 
               {isAuthenticated && isVendor && (
-                <>
+                <React.Fragment key="vendor-menu">
                   <Link
                     to="/vendor/dashboard"
                     className="text-gray-700 hover:text-primary-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium transition-colors"
@@ -373,12 +377,12 @@ const Header: React.FC = () => {
                   >
                     My Items
                   </Link>
-                </>
+                </React.Fragment>
               )}
 
               {/* Mobile auth buttons */}
               {!isAuthenticated && (
-                <div className="pt-2 border-t border-gray-200 mt-2">
+                <div key="mobile-auth" className="pt-2 border-t border-gray-200 mt-2">
                   <Link
                     to="/login"
                     className="block text-gray-700 hover:text-primary-600 hover:bg-gray-50 px-3 py-2 rounded-md text-base font-medium transition-colors"

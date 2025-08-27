@@ -15,6 +15,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import Home from '@/pages/Home';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
+import CompleteSetup from '@/pages/CompleteSetup';
 import Dashboard from '@/pages/Dashboard';
 import VendorDashboard from '@/pages/VendorDashboard';
 import Items from '@/pages/Items';
@@ -30,6 +31,11 @@ import VendorProfile from '@/pages/VendorProfile';
 import VendorItems from '@/pages/VendorItems';
 import VendorOrders from '@/pages/VendorOrders';
 import VendorAnalytics from '@/pages/VendorAnalytics';
+import HowItWorks from '@/pages/HowItWorks';
+import HelpCenter from '@/pages/HelpCenter';
+import ContactUs from '@/pages/ContactUs';
+import PrivacyPolicy from '@/pages/PrivacyPolicy';
+import TermsOfService from '@/pages/TermsOfService';
 import NotFound from '@/pages/NotFound';
 
 // Create a client
@@ -55,8 +61,26 @@ function App() {
                   <Route path="/" element={<Layout><Home /></Layout>} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
+                  
+                  {/* Setup completion route - requires authentication but allows incomplete setup */}
+                  <Route 
+                    path="/complete-setup" 
+                    element={
+                      <ProtectedRoute allowIncompleteSetup={true}>
+                        <CompleteSetup />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
                   <Route path="/items" element={<Layout><Items /></Layout>} />
                   <Route path="/items/:itemId" element={<Layout><ItemDetail /></Layout>} />
+                  
+                  {/* Public info pages */}
+                  <Route path="/how-it-works" element={<Layout><HowItWorks /></Layout>} />
+                  <Route path="/help" element={<Layout><HelpCenter /></Layout>} />
+                  <Route path="/contact" element={<Layout><ContactUs /></Layout>} />
+                  <Route path="/privacy" element={<Layout><PrivacyPolicy /></Layout>} />
+                  <Route path="/terms" element={<Layout><TermsOfService /></Layout>} />
 
                   {/* Protected user routes */}
                   <Route

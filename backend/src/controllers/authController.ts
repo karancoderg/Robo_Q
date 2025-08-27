@@ -340,8 +340,11 @@ export const googleTokenAuth = asyncHandler(async (req: Request, res: Response):
             email: user.email,
             role: user.role,
             isVerified: user.isVerified,
+            setupCompleted: user.setupCompleted || false,
             avatar: user.avatar
           },
+          isNewUser: false,
+          needsSetup: !(user.setupCompleted || false), // Check if setup is needed
           ...tokens
         }
       });
@@ -372,21 +375,25 @@ export const googleTokenAuth = asyncHandler(async (req: Request, res: Response):
             email: user.email,
             role: user.role,
             isVerified: user.isVerified,
+            setupCompleted: user.setupCompleted || false,
             avatar: user.avatar
           },
+          isNewUser: false,
+          needsSetup: !(user.setupCompleted || false),
           ...tokens
         }
       });
       return;
     }
     
-    // Create new user
+    // Create new user in PENDING SETUP state
     const newUser = await User.create({
       googleId,
       name: name || 'Google User',
       email,
-      role: 'user',
+      role: 'user', // Default role, can be changed during setup
       isVerified: true,
+      setupCompleted: false, // KEY FIX: User needs to complete setup
       avatar: picture,
     });
     
@@ -404,8 +411,11 @@ export const googleTokenAuth = asyncHandler(async (req: Request, res: Response):
           email: newUser.email,
           role: newUser.role,
           isVerified: newUser.isVerified,
+          setupCompleted: newUser.setupCompleted,
           avatar: newUser.avatar
         },
+        isNewUser: true,
+        needsSetup: !newUser.setupCompleted, // Always true for new Google users
         ...tokens
       }
     });
@@ -422,5 +432,73 @@ export const googleTokenAuth = asyncHandler(async (req: Request, res: Response):
     }
     
     throw createError('Failed to verify Google token', 400);
+  }
+});
+
+export const completeSetup = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { email, password, role, businessInfo } = req.body;
+  
+  if (!email) {
+    throw createError('Email is required for setup completion', 400);
+  }
+  
+  if (!password || password.length < 6) {
+    throw createError('Password must be at least 6 characters long', 400);
+  }
+  
+  if (!role || !['user', 'vendor'].includes(role)) {
+    throw createError('Valid role (user or vendor) is required', 400);
+  }
+  
+  try {
+    // Find user by email
+    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+    
+    if (!user) {
+      throw createError('User not found', 404);
+    }
+    
+    if (user.setupCompleted) {
+      throw createError('User setup already completed', 400);
+    }
+    
+    // Update user with setup information
+    user.password = password; // Will be hashed by pre-save middleware
+    user.role = role;
+    user.setupCompleted = true;
+    
+    // If vendor role, validate business info
+    if (role === 'vendor' && businessInfo) {
+      // Additional vendor setup can be handled here
+      // For now, just mark setup as complete
+    }
+    
+    await user.save();
+    
+    // Generate new tokens
+    const tokens = generateTokens(user);
+    
+    logger.info(`Setup completed for user: ${email}`);
+    
+    res.json({
+      success: true,
+      message: 'Setup completed successfully',
+      data: {
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          isVerified: user.isVerified,
+          setupCompleted: user.setupCompleted,
+          avatar: user.avatar
+        },
+        ...tokens
+      }
+    });
+    
+  } catch (error: any) {
+    logger.error('Setup completion error:', error);
+    throw createError('Failed to complete setup', 500);
   }
 });

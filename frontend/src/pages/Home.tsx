@@ -140,15 +140,15 @@ const Home: React.FC = () => {
         <div className="container-responsive section-padding-sm lg:flex lg:items-center lg:justify-between">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-gray-900 text-center lg:text-left">
             {!isAuthenticated ? (
-              <>
+              <React.Fragment key="home-cta-guest">
                 <span className="block">Ready to get started?</span>
                 <span className="block text-primary-600 mt-1">Join thousands of satisfied customers.</span>
-              </>
+              </React.Fragment>
             ) : (
-              <>
+              <React.Fragment key="home-cta-user">
                 <span className="block">Welcome back!</span>
                 <span className="block text-primary-600 mt-1">Ready to place your next order?</span>
-              </>
+              </React.Fragment>
             )}
           </h2>
           <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4 lg:mt-0 lg:flex-shrink-0 justify-center lg:justify-start">

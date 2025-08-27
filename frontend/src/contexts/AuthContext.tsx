@@ -7,8 +7,8 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
-  loginWithOTP: (email: string) => Promise<{ success: boolean; userId?: string }>;
-  verifyLoginOTP: (userId: string, otp: string) => Promise<boolean>;
+  loginWithOTP: (email: string) => Promise<{ success: boolean }>;
+  verifyLoginOTP: (email: string, otp: string) => Promise<boolean>;
   loginWithGoogle: (token: string) => Promise<{ success: boolean; needsSetup?: boolean; user?: User }>;
   completeSetup: (data: SetupData) => Promise<boolean>;
   register: (data: RegisterData) => Promise<boolean>;
@@ -67,7 +67,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // First, try to get profile with current token
           const response = await authAPI.getProfile();
           if (response.data.success) {
-            setUser(response.data.data!.user);
+            const profileUser = response.data.data!.user as User;
+            setUser(profileUser);
           }
         } catch (error: any) {
           console.error('Profile fetch error:', error);
@@ -85,7 +86,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 // Try to get profile again with new token
                 const profileResponse = await authAPI.getProfile();
                 if (profileResponse.data.success) {
-                  setUser(profileResponse.data.data!.user);
+                  const refreshedUser = profileResponse.data.data!.user as User;
+                  setUser(refreshedUser);
                 }
               } else {
                 throw new Error('Refresh failed');
@@ -130,26 +132,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const loginWithOTP = async (email: string): Promise<{ success: boolean; userId?: string }> => {
+  const loginWithOTP = async (email: string): Promise<{ success: boolean }> => {
     try {
       const response = await authAPI.loginWithOTP({ email });
       if (response.data.success) {
         toast.success('OTP sent to your email');
-        return { 
-          success: true, 
-          userId: response.data.data?.userId 
-        };
+        return { success: true };
       }
       return { success: false };
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to send OTP');
+      // Provide more user-friendly error messages
+      if (error.response?.status === 404) {
+        toast.error('Account not found. Please register first or check your email address.', {
+          duration: 5000,
+        });
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to send OTP');
+      }
       return { success: false };
     }
   };
 
-  const verifyLoginOTP = async (userId: string, otp: string): Promise<boolean> => {
+  const verifyLoginOTP = async (email: string, otp: string): Promise<boolean> => {
     try {
-      const response = await authAPI.verifyLoginOTP({ userId, otp });
+      const response = await authAPI.verifyLoginOTP({ email, otp });
       if (response.data.success) {
         const { user, accessToken, refreshToken } = response.data.data!;
         localStorage.setItem('accessToken', accessToken);
@@ -202,47 +208,55 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const completeSetup = async (data: SetupData): Promise<boolean> => {
     try {
-      // Try multiple ways to get user email
+      // Get user email from current user or localStorage
       const userEmail = user?.email || 
                        localStorage.getItem('userEmail') || 
                        localStorage.getItem('googleUserEmail');
-      
-      // Emergency Setup - processing user data
       
       if (!userEmail) {
         toast.error('User email not found. Please login again.');
         return false;
       }
       
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const response = await fetch(`${apiUrl}/auth/emergency-complete-setup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: userEmail,
-          ...data
-        })
+      const response = await authAPI.completeSetup({
+        email: userEmail,
+        ...data
       });
       
-      const result = await response.json();
-      // Emergency Setup - Response received
-      
-      if (result.success) {
-        const { user: updatedUser, accessToken, refreshToken } = result.data;
+      if (response.data.success) {
+        const { user: updatedUser, accessToken, refreshToken } = response.data.data!;
+        
+        // Update tokens first
         localStorage.setItem('accessToken', accessToken);
         if (refreshToken) {
           localStorage.setItem('refreshToken', refreshToken);
         }
-        setUser(updatedUser);
+        
+        // CRITICAL FIX: Ensure setupCompleted is explicitly set to true
+        const userWithSetupCompleted = {
+          ...updatedUser,
+          setupCompleted: true
+        };
+        
+        // Update user state with explicit setup completion
+        setUser(userWithSetupCompleted);
+        
+        // Also store in localStorage for immediate access
+        localStorage.setItem('user', JSON.stringify(userWithSetupCompleted));
+        
         toast.success('Setup completed successfully!');
+        
+        // Small delay to ensure state update is processed
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         return true;
       } else {
-        toast.error(result.message || 'Setup completion failed');
+        toast.error(response.data.message || 'Setup completion failed');
         return false;
       }
     } catch (error: any) {
-      console.error('🔧 Emergency Setup Error:', error);
-      toast.error('Setup completion failed');
+      console.error('Setup completion error:', error);
+      toast.error(error.response?.data?.message || 'Setup completion failed');
       return false;
     }
   };

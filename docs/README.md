@@ -1,6 +1,6 @@
-# 🤖 Robo-Q: Autonomous Delivery Robot Platform
+# 🚀 NexDrop: Next-Generation Autonomous Delivery Platform
 
-A full-stack web application for managing autonomous delivery robots, vendors, and customer orders with real-time tracking and Google OAuth authentication.
+A full-stack web application for managing next-generation autonomous delivery robots, vendors, and customer orders with real-time tracking and advanced authentication systems.
 
 ## ✨ Features
 

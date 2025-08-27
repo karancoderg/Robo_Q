@@ -120,10 +120,10 @@ export const authAPI = {
     api.post('/auth/verify-otp', data),
 
   verifyLoginOTP: (data: {
-    userId: string;
+    email: string;
     otp: string;
   }): Promise<AxiosResponse<ApiResponse<LoginResponse>>> =>
-    api.post('/auth/login/otp/verify', data),
+    api.post('/auth/verify-otp', data),
 
   loginWithGoogle: (data: {
     token: string;
@@ -131,6 +131,7 @@ export const authAPI = {
     api.post('/auth/google', data),
 
   completeSetup: (data: {
+    email: string;
     password: string;
     role: 'user' | 'vendor';
     businessInfo?: any;

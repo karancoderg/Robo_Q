@@ -6,9 +6,14 @@ import LoadingSpinner from './LoadingSpinner';
 interface ProtectedRouteProps {
   children: ReactNode;
   requiredRole?: 'user' | 'vendor' | 'admin';
+  allowIncompleteSetup?: boolean; // Allow access even if setup is not completed
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
+  children, 
+  requiredRole, 
+  allowIncompleteSetup = false 
+}) => {
   const { user, loading, isAuthenticated } = useAuth();
   const location = useLocation();
 
@@ -23,6 +28,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
   if (!isAuthenticated) {
     // Redirect to login page with return url
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // CRITICAL FIX: Check if user needs to complete setup
+  if (!allowIncompleteSetup && user && !user.setupCompleted) {
+    // User is authenticated but hasn't completed setup
+    return <Navigate to="/complete-setup" replace />;
   }
 
   if (requiredRole && user?.role !== requiredRole) {

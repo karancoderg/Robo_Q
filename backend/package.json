@@ -1,16 +1,16 @@
 {
-  "name": "delivery-robot-backend",
+  "name": "nexdrop-backend",
   "version": "1.0.0",
-  "description": "Backend API for Autonomous Delivery Robot",
-  "main": "dist/server.js",
+  "description": "Backend API for NexDrop - Next-generation Autonomous Delivery Platform",
+  "main": "src/server.js",
   "scripts": {
     "dev": "nodemon src/server.js",
-    "dev:full": "nodemon --exec \"ts-node --transpile-only src/server.ts\"",
-    "build": "tsc",
+    "build": "node ../scripts/backend_build.js",
     "start": "node src/server.js",
+    "start:prod": "node dist/server.js",
     "test": "jest",
-    "lint": "eslint src/**/*.ts",
-    "seed": "ts-node src/utils/seedData.ts"
+    "check": "node -c src/server.js",
+    "clean": "rm -rf dist && mkdir dist"
   },
   "dependencies": {
     "@types/express-session": "^1.18.2",
@@ -20,7 +20,6 @@
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
-    "express-rate-limit": "^7.1.5",
     "express-session": "^1.18.2",
     "express-validator": "^7.0.1",
     "google-auth-library": "^10.3.0",

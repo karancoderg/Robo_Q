@@ -11,6 +11,7 @@ export interface IUser extends Document {
   avatar?: string;
   role: 'user' | 'vendor' | 'admin';
   isVerified: boolean;
+  setupCompleted: boolean;
   address?: {
     street: string;
     city: string;

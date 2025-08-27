@@ -12,12 +12,12 @@ const Footer: React.FC = () => {
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center space-x-2 mb-4">
               <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">🤖</span>
+                <span className="text-white font-bold text-lg">🚀</span>
               </div>
-              <span className="text-xl font-bold">DeliveryBot</span>
+              <span className="text-xl font-bold">NexDrop</span>
             </div>
             <p className="text-gray-400 mb-4 max-w-md">
-              Autonomous delivery robots bringing your favorite food and groceries right to your doorstep. 
+              Next-generation autonomous delivery robots bringing your favorite food and groceries right to your doorstep. 
               Fast, reliable, and contactless delivery service.
             </p>
             <div className="flex space-x-4">
@@ -54,7 +54,7 @@ const Footer: React.FC = () => {
                 </Link>
               </li>
               {!user && (
-                <>
+                <React.Fragment key="footer-guest-links">
                   <li>
                     <Link to="/login" className="text-gray-300 hover:text-white transition-colors">
                       Sign In
@@ -65,10 +65,10 @@ const Footer: React.FC = () => {
                       Sign Up
                     </Link>
                   </li>
-                </>
+                </React.Fragment>
               )}
               {user && (
-                <>
+                <React.Fragment key="footer-user-links">
                   <li>
                     <Link 
                       to={user.role === 'vendor' ? '/vendor/dashboard' : '/dashboard'} 
@@ -82,12 +82,12 @@ const Footer: React.FC = () => {
                       My Orders
                     </Link>
                   </li>
-                </>
+                </React.Fragment>
               )}
               <li>
-                <a href="#" className="text-gray-300 hover:text-white transition-colors">
+                <Link to="/how-it-works" className="text-gray-300 hover:text-white transition-colors">
                   How It Works
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -99,24 +99,24 @@ const Footer: React.FC = () => {
             </h3>
             <ul className="space-y-2">
               <li>
-                <a href="#" className="text-gray-300 hover:text-white transition-colors">
+                <Link to="/help" className="text-gray-300 hover:text-white transition-colors">
                   Help Center
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-gray-300 hover:text-white transition-colors">
+                <Link to="/contact" className="text-gray-300 hover:text-white transition-colors">
                   Contact Us
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-gray-300 hover:text-white transition-colors">
+                <Link to="/privacy" className="text-gray-300 hover:text-white transition-colors">
                   Privacy Policy
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-gray-300 hover:text-white transition-colors">
+                <Link to="/terms" className="text-gray-300 hover:text-white transition-colors">
                   Terms of Service
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -125,10 +125,10 @@ const Footer: React.FC = () => {
         <div className="mt-8 pt-8 border-t border-gray-800">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-400 text-sm">
-              © 2024 DeliveryBot. All rights reserved.
+              © 2024 NexDrop. All rights reserved.
             </p>
             <p className="text-gray-400 text-sm mt-2 md:mt-0">
-              Made with ❤️ for autonomous delivery
+              Made with ❤️ for next-generation delivery
             </p>
           </div>
         </div>

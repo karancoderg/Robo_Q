@@ -11,7 +11,8 @@ import {
   updateProfile,
   changePassword,
   googleTokenAuth,
-  refreshToken
+  refreshToken,
+  completeSetup
 } from '../controllers/authController';
 import { authenticate } from '../middleware/auth';
 import { validate, schemas } from '../middleware/validation';
@@ -24,6 +25,12 @@ router.post('/login', validate(schemas.login), login);
 router.post('/login/otp', loginWithOTP);
 router.post('/login/otp/verify', validate(schemas.verifyLoginOTP), verifyLoginOTP);
 router.post('/refresh-token', refreshToken);
+
+// Google OAuth token authentication
+router.post('/google/token', googleTokenAuth);
+
+// Complete setup for Google OAuth users (public route)
+router.post('/complete-setup', completeSetup);
 
 // Google OAuth routes (temporarily disabled)
 // router.get('/google', 

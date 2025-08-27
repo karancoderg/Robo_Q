@@ -8,3 +8,15 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
+
+// Global Google OAuth types
+declare global {
+  interface Window {
+    google?: {
+      accounts?: {
+        id?: any;
+        oauth2?: any;
+      };
+    };
+  }
+}

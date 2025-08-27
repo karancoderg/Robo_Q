@@ -48,6 +48,10 @@ const userSchema = new Schema<IUser>({
     type: Boolean,
     default: false
   },
+  setupCompleted: {
+    type: Boolean,
+    default: false
+  },
   address: {
     street: String,
     city: String,

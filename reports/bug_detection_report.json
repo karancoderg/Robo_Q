@@ -1,0 +1,257 @@
+{
+  "executiveSummary": {
+    "totalIssues": 4,
+    "criticalIssues": 1,
+    "highIssues": 0,
+    "mediumIssues": 3,
+    "lowIssues": 0,
+    "overallHealth": "Critical",
+    "primaryConcerns": [
+      "Privilege Escalation Vulnerability"
+    ]
+  },
+  "criticalIssues": [
+    {
+      "id": "BUG-001",
+      "category": "Security",
+      "severity": "Critical",
+      "priority": "P1",
+      "title": "Privilege Escalation Vulnerability",
+      "description": "Users can register with admin role",
+      "browser": "All",
+      "steps": [
+        "1. Register with role: \"admin\"",
+        "2. Check assigned role"
+      ],
+      "expected": "Role should be restricted to user/vendor",
+      "actual": "Admin role assigned to new user",
+      "impact": "Unauthorized admin access possible",
+      "suggestedFix": "Validate and restrict role assignment in registration",
+      "timestamp": "2025-08-27T21:26:18.802Z"
+    }
+  ],
+  "bugInventory": {
+    "functional": [],
+    "ui": [],
+    "performance": [],
+    "security": [
+      {
+        "id": "BUG-001",
+        "category": "Security",
+        "severity": "Critical",
+        "priority": "P1",
+        "title": "Privilege Escalation Vulnerability",
+        "description": "Users can register with admin role",
+        "browser": "All",
+        "steps": [
+          "1. Register with role: \"admin\"",
+          "2. Check assigned role"
+        ],
+        "expected": "Role should be restricted to user/vendor",
+        "actual": "Admin role assigned to new user",
+        "impact": "Unauthorized admin access possible",
+        "suggestedFix": "Validate and restrict role assignment in registration",
+        "timestamp": "2025-08-27T21:26:18.802Z"
+      }
+    ],
+    "accessibility": [
+      {
+        "id": "BUG-002",
+        "category": "Accessibility",
+        "severity": "Medium",
+        "priority": "P3",
+        "title": "Missing Semantic HTML - Checkout.tsx",
+        "description": "Component lacks semantic HTML elements",
+        "browser": "All",
+        "steps": [
+          "1. Review Checkout.tsx",
+          "2. Check for semantic elements"
+        ],
+        "expected": "Use of header, nav, main, section, article elements",
+        "actual": "Only generic div elements used",
+        "impact": "Poor screen reader experience",
+        "suggestedFix": "Replace divs with appropriate semantic HTML elements",
+        "timestamp": "2025-08-27T21:26:18.804Z"
+      },
+      {
+        "id": "BUG-003",
+        "category": "Accessibility",
+        "severity": "Medium",
+        "priority": "P3",
+        "title": "Missing Semantic HTML - CompleteSetup.tsx",
+        "description": "Component lacks semantic HTML elements",
+        "browser": "All",
+        "steps": [
+          "1. Review CompleteSetup.tsx",
+          "2. Check for semantic elements"
+        ],
+        "expected": "Use of header, nav, main, section, article elements",
+        "actual": "Only generic div elements used",
+        "impact": "Poor screen reader experience",
+        "suggestedFix": "Replace divs with appropriate semantic HTML elements",
+        "timestamp": "2025-08-27T21:26:18.804Z"
+      },
+      {
+        "id": "BUG-004",
+        "category": "Accessibility",
+        "severity": "Medium",
+        "priority": "P3",
+        "title": "Limited Keyboard Navigation Support",
+        "description": "Components may not support keyboard navigation",
+        "browser": "All",
+        "steps": [
+          "1. Try navigating with Tab key",
+          "2. Check for focus management"
+        ],
+        "expected": "Proper keyboard navigation and focus management",
+        "actual": "Limited keyboard navigation support found",
+        "impact": "Keyboard users cannot navigate effectively",
+        "suggestedFix": "Implement proper focus management and keyboard event handlers",
+        "timestamp": "2025-08-27T21:26:18.805Z"
+      }
+    ]
+  },
+  "priorityMatrix": {
+    "p1": [
+      {
+        "id": "BUG-001",
+        "category": "Security",
+        "severity": "Critical",
+        "priority": "P1",
+        "title": "Privilege Escalation Vulnerability",
+        "description": "Users can register with admin role",
+        "browser": "All",
+        "steps": [
+          "1. Register with role: \"admin\"",
+          "2. Check assigned role"
+        ],
+        "expected": "Role should be restricted to user/vendor",
+        "actual": "Admin role assigned to new user",
+        "impact": "Unauthorized admin access possible",
+        "suggestedFix": "Validate and restrict role assignment in registration",
+        "timestamp": "2025-08-27T21:26:18.802Z"
+      }
+    ],
+    "p2": [],
+    "p3": [
+      {
+        "id": "BUG-002",
+        "category": "Accessibility",
+        "severity": "Medium",
+        "priority": "P3",
+        "title": "Missing Semantic HTML - Checkout.tsx",
+        "description": "Component lacks semantic HTML elements",
+        "browser": "All",
+        "steps": [
+          "1. Review Checkout.tsx",
+          "2. Check for semantic elements"
+        ],
+        "expected": "Use of header, nav, main, section, article elements",
+        "actual": "Only generic div elements used",
+        "impact": "Poor screen reader experience",
+        "suggestedFix": "Replace divs with appropriate semantic HTML elements",
+        "timestamp": "2025-08-27T21:26:18.804Z"
+      },
+      {
+        "id": "BUG-003",
+        "category": "Accessibility",
+        "severity": "Medium",
+        "priority": "P3",
+        "title": "Missing Semantic HTML - CompleteSetup.tsx",
+        "description": "Component lacks semantic HTML elements",
+        "browser": "All",
+        "steps": [
+          "1. Review CompleteSetup.tsx",
+          "2. Check for semantic elements"
+        ],
+        "expected": "Use of header, nav, main, section, article elements",
+        "actual": "Only generic div elements used",
+        "impact": "Poor screen reader experience",
+        "suggestedFix": "Replace divs with appropriate semantic HTML elements",
+        "timestamp": "2025-08-27T21:26:18.804Z"
+      },
+      {
+        "id": "BUG-004",
+        "category": "Accessibility",
+        "severity": "Medium",
+        "priority": "P3",
+        "title": "Limited Keyboard Navigation Support",
+        "description": "Components may not support keyboard navigation",
+        "browser": "All",
+        "steps": [
+          "1. Try navigating with Tab key",
+          "2. Check for focus management"
+        ],
+        "expected": "Proper keyboard navigation and focus management",
+        "actual": "Limited keyboard navigation support found",
+        "impact": "Keyboard users cannot navigate effectively",
+        "suggestedFix": "Implement proper focus management and keyboard event handlers",
+        "timestamp": "2025-08-27T21:26:18.805Z"
+      }
+    ],
+    "p4": []
+  },
+  "quickWins": [
+    {
+      "id": "BUG-002",
+      "category": "Accessibility",
+      "severity": "Medium",
+      "priority": "P3",
+      "title": "Missing Semantic HTML - Checkout.tsx",
+      "description": "Component lacks semantic HTML elements",
+      "browser": "All",
+      "steps": [
+        "1. Review Checkout.tsx",
+        "2. Check for semantic elements"
+      ],
+      "expected": "Use of header, nav, main, section, article elements",
+      "actual": "Only generic div elements used",
+      "impact": "Poor screen reader experience",
+      "suggestedFix": "Replace divs with appropriate semantic HTML elements",
+      "timestamp": "2025-08-27T21:26:18.804Z"
+    },
+    {
+      "id": "BUG-003",
+      "category": "Accessibility",
+      "severity": "Medium",
+      "priority": "P3",
+      "title": "Missing Semantic HTML - CompleteSetup.tsx",
+      "description": "Component lacks semantic HTML elements",
+      "browser": "All",
+      "steps": [
+        "1. Review CompleteSetup.tsx",
+        "2. Check for semantic elements"
+      ],
+      "expected": "Use of header, nav, main, section, article elements",
+      "actual": "Only generic div elements used",
+      "impact": "Poor screen reader experience",
+      "suggestedFix": "Replace divs with appropriate semantic HTML elements",
+      "timestamp": "2025-08-27T21:26:18.804Z"
+    },
+    {
+      "id": "BUG-004",
+      "category": "Accessibility",
+      "severity": "Medium",
+      "priority": "P3",
+      "title": "Limited Keyboard Navigation Support",
+      "description": "Components may not support keyboard navigation",
+      "browser": "All",
+      "steps": [
+        "1. Try navigating with Tab key",
+        "2. Check for focus management"
+      ],
+      "expected": "Proper keyboard navigation and focus management",
+      "actual": "Limited keyboard navigation support found",
+      "impact": "Keyboard users cannot navigate effectively",
+      "suggestedFix": "Implement proper focus management and keyboard event handlers",
+      "timestamp": "2025-08-27T21:26:18.805Z"
+    }
+  ],
+  "recommendations": [
+    "URGENT: Address critical security vulnerabilities immediately",
+    "Establish automated testing pipeline to prevent regression",
+    "Implement proper error handling and user feedback mechanisms"
+  ],
+  "totalBugs": 4,
+  "timestamp": "2025-08-27T21:26:18.806Z"
+}

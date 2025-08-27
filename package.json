@@ -1,7 +1,7 @@
 {
-  "name": "autonomous-delivery-robot",
+  "name": "nexdrop-delivery-platform",
   "version": "1.0.0",
-  "description": "Full-stack Autonomous Delivery Robot Platform",
+  "description": "Next-generation Autonomous Delivery Platform - NexDrop",
   "private": true,
   "workspaces": [
     "frontend",

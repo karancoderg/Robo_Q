@@ -70,10 +70,10 @@ const Register: React.FC = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
-          <div className="text-4xl mb-4">🤖</div>
+          <div className="text-4xl mb-4">🚀</div>
           <h2 className="text-3xl font-bold text-gray-900">Create your account</h2>
           <p className="mt-2 text-sm text-gray-600">
-            Join RoboQ for autonomous delivery services
+            Join NexDrop for next-generation delivery services
           </p>
         </div>
       </div>
@@ -305,11 +305,11 @@ const Register: React.FC = () => {
         {/* Features */}
         <div className="mt-8">
           <div className="text-center">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Why choose RoboQ?</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Why choose NexDrop?</h3>
             <div className="grid grid-cols-1 gap-4">
               <div className="flex items-center space-x-3 text-sm text-gray-600">
-                <span className="text-xl">🤖</span>
-                <span>Autonomous robot delivery</span>
+                <span className="text-xl">🚀</span>
+                <span>Next-generation robot delivery</span>
               </div>
               <div className="flex items-center space-x-3 text-sm text-gray-600">
                 <span className="text-xl">⚡</span>

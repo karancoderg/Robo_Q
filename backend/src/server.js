@@ -105,13 +105,30 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  setupCompleted: {
+    type: Boolean,
+    default: false
+  },
   needsPasswordSetup: {
+    type: Boolean,
+    default: false
+  },
+  needsPasswordChange: {
     type: Boolean,
     default: false
   },
   needsRoleSelection: {
     type: Boolean,
     default: false
+  },
+  lastPasswordChange: {
+    type: Date,
+    default: Date.now
+  },
+  loginMethods: {
+    type: [String],
+    enum: ['email', 'google'],
+    default: ['email']
   },
   address: {
     // Traditional address format
@@ -456,6 +473,41 @@ const authenticateToken = async (req, res, next) => {
   }
 };
 
+// Setup-aware authentication middleware
+const authenticateWithSetupCheck = async (req, res, next) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+      return res.status(401).json({ success: false, message: 'Access token required' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.userId);
+    
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'User not found' });
+    }
+
+    // CRITICAL FIX: Check if user has completed setup
+    if (!user.setupCompleted) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Setup completion required',
+        needsSetup: true,
+        redirectTo: '/complete-setup'
+      });
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error('❌ AUTH ERROR:', error.message);
+    return res.status(403).json({ success: false, message: 'Invalid or expired token' });
+  }
+};
+
 // Routes
 
 // Health check
@@ -531,7 +583,7 @@ app.post('/api/auth/login/otp', async (req, res) => {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: 'Your Login OTP - RoboQ',
+      subject: 'Your Login OTP - NexDrop',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">Login OTP</h2>
@@ -549,7 +601,11 @@ app.post('/api/auth/login/otp', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'OTP sent to your email'
+      message: 'OTP sent to your email',
+      data: {
+        userId: user._id,
+        email: user.email
+      }
     });
   } catch (error) {
     console.error('OTP request error:', error);
@@ -617,7 +673,11 @@ app.post('/api/auth/verify-otp', async (req, res) => {
 // Register
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { name, email, password, role = 'user' } = req.body;
+    // SECURITY FIX: Remove role from request body to prevent privilege escalation
+    const { name, email, password } = req.body;
+    
+    // Force default role - users must request vendor role through proper channels
+    const role = 'user';
     
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -687,7 +747,7 @@ app.get('/api/auth/profile', authenticateToken, async (req, res) => {
 });
 
 // Update user profile
-app.put('/api/auth/profile', authenticateToken, async (req, res) => {
+app.put('/api/auth/profile', authenticateWithSetupCheck, async (req, res) => {
   try {
     const { name, phone, address } = req.body;
     
@@ -722,7 +782,7 @@ app.put('/api/auth/profile', authenticateToken, async (req, res) => {
 });
 
 // Change password
-app.put('/api/auth/change-password', authenticateToken, async (req, res) => {
+app.put('/api/auth/change-password', authenticateWithSetupCheck, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     
@@ -816,9 +876,10 @@ app.post('/api/auth/google', async (req, res) => {
         message: 'Login successful',
         data: {
           user: user.toJSON(),
-          accessToken: authToken,  // Changed from 'token' to 'accessToken'
-          refreshToken: authToken, // Add refreshToken
-          isNewUser: false
+          accessToken: authToken,
+          refreshToken: authToken,
+          isNewUser: false,
+          needsSetup: !(user.setupCompleted || false)
         }
       });
     }
@@ -830,47 +891,70 @@ app.post('/api/auth/google', async (req, res) => {
       // User exists with email but no Google ID - link accounts
       user.googleId = googleId;
       if (picture) user.avatar = picture;
+      
+      // No need to generate password - user will set it in complete-setup if needed
       await user.save();
       
       const authToken = generateToken(user);
       
+      // Send welcome email for account linking
+      try {
+        await EmailService.sendWelcomeEmail(email, name || user.name, true);
+        console.log(`📧 Welcome email sent to ${email} for account linking`);
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError);
+      }
+      
       return res.json({
         success: true,
-        message: 'Account linked successfully',
+        message: 'Account linked successfully with Google!',
         data: {
           user: user.toJSON(),
-          accessToken: authToken,  // Changed from 'token' to 'accessToken'
-          refreshToken: authToken, // Add refreshToken
-          isNewUser: false
+          accessToken: authToken,
+          refreshToken: authToken,
+          isNewUser: false,
+          needsSetup: !(user.setupCompleted || false),
+          accountLinked: true
         }
       });
     }
     
-    // New user - create account but require additional setup
+    // New user - create account without password (will be set in complete-setup)
     const newUser = new User({
       googleId,
       name: name || 'Google User',
       email,
+      // No password - user will set it during complete-setup
       avatar: picture,
       isVerified: true, // Google accounts are pre-verified
-      needsPasswordSetup: true,
+      setupCompleted: false, // Require setup completion
+      needsPasswordSetup: true, // User needs to set password in setup
       needsRoleSelection: true,
-      role: 'user' // Default role, can be changed
+      role: 'user' // Default role, can be changed during setup
     });
     
     await newUser.save();
+    
+    // Send welcome email only (no password setup email)
+    try {
+      await EmailService.sendWelcomeEmail(email, name || 'Google User', true);
+      console.log(`📧 Welcome email sent to ${email}`);
+    } catch (emailError) {
+      console.error('Failed to send welcome email:', emailError);
+    }
     
     const authToken = generateToken(newUser);
     
     res.json({
       success: true,
-      message: 'Account created successfully',
+      message: 'Welcome! Please complete your account setup.',
       data: {
         user: newUser.toJSON(),
-        accessToken: authToken,  // Changed from 'token' to 'accessToken'
-        refreshToken: authToken, // Add refreshToken
+        accessToken: authToken,
+        refreshToken: authToken,
         isNewUser: true,
-        needsSetup: true
+        needsSetup: true,
+        needsPasswordSetup: true
       }
     });
     
@@ -912,7 +996,8 @@ app.post('/api/auth/emergency-complete-setup', async (req, res) => {
 
     // Update user with password and role
     if (password) {
-      user.password = password;
+          // Let the User model's pre-save hook handle password hashing
+          user.password = password;
     }
     
     if (role && ['user', 'vendor'].includes(role)) {
@@ -921,6 +1006,8 @@ app.post('/api/auth/emergency-complete-setup', async (req, res) => {
     
     user.needsPasswordSetup = false;
     user.needsRoleSelection = false;
+    user.setupCompleted = true; // KEY FIX: Mark setup as completed
+    user.setupCompleted = true; // KEY FIX: Mark setup as completed
     
     await user.save();
     // User updated successfully
@@ -982,7 +1069,8 @@ app.post('/api/auth/complete-setup', authenticateToken, async (req, res) => {
 
     // Update user with password and role
     if (password) {
-      user.password = password;
+          // Let the User model's pre-save hook handle password hashing
+          user.password = password;
     }
     
     if (role && ['user', 'vendor'].includes(role)) {
@@ -991,6 +1079,7 @@ app.post('/api/auth/complete-setup', authenticateToken, async (req, res) => {
     
     user.needsPasswordSetup = false;
     user.needsRoleSelection = false;
+    user.setupCompleted = true; // KEY FIX: Mark setup as completed
     
     await user.save();
 
@@ -1052,7 +1141,8 @@ app.post('/api/auth/google-complete-setup', async (req, res) => {
 
     // Update user with password and role
     if (password) {
-      user.password = password;
+          // Let the User model's pre-save hook handle password hashing
+          user.password = password;
     }
     
     if (role && ['user', 'vendor'].includes(role)) {
@@ -1061,6 +1151,7 @@ app.post('/api/auth/google-complete-setup', async (req, res) => {
     
     user.needsPasswordSetup = false;
     user.needsRoleSelection = false;
+    user.setupCompleted = true; // KEY FIX: Mark setup as completed
     
     await user.save();
 
@@ -1372,7 +1463,7 @@ app.get('/api/addresses/iit-mandi', async (req, res) => {
 });
 
 // Create order
-app.post('/api/orders', authenticateToken, async (req, res) => {
+app.post('/api/orders', authenticateWithSetupCheck, async (req, res) => {
   try {
     const { vendorId, items, deliveryAddress, notes, customerPhone } = req.body;
     
@@ -1452,7 +1543,7 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
 });
 
 // Get user orders
-app.get('/api/orders', authenticateToken, async (req, res) => {
+app.get('/api/orders', authenticateWithSetupCheck, async (req, res) => {
   try {
     const orders = await Order.find({ userId: req.user._id })
       .populate('vendorId', 'businessName contactInfo')
@@ -1473,7 +1564,7 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
 });
 
 // Get vendor items (for vendor management)
-app.get('/api/vendor/items', authenticateToken, async (req, res) => {
+app.get('/api/vendor/items', authenticateWithSetupCheck, async (req, res) => {
   try {
     if (req.user.role !== 'vendor') {
       return res.status(403).json({
@@ -1528,7 +1619,7 @@ app.get('/api/vendor/items', authenticateToken, async (req, res) => {
 });
 
 // Create vendor item
-app.post('/api/vendor/items', authenticateToken, async (req, res) => {
+app.post('/api/vendor/items', authenticateWithSetupCheck, async (req, res) => {
   try {
     if (req.user.role !== 'vendor') {
       return res.status(403).json({
@@ -1578,7 +1669,7 @@ app.post('/api/vendor/items', authenticateToken, async (req, res) => {
 });
 
 // Update vendor item
-app.put('/api/vendor/items/:itemId', authenticateToken, async (req, res) => {
+app.put('/api/vendor/items/:itemId', authenticateWithSetupCheck, async (req, res) => {
   try {
     if (req.user.role !== 'vendor') {
       return res.status(403).json({
@@ -1634,7 +1725,7 @@ app.put('/api/vendor/items/:itemId', authenticateToken, async (req, res) => {
 });
 
 // Delete vendor item
-app.delete('/api/vendor/items/:itemId', authenticateToken, async (req, res) => {
+app.delete('/api/vendor/items/:itemId', authenticateWithSetupCheck, async (req, res) => {
   try {
     if (req.user.role !== 'vendor') {
       return res.status(403).json({
@@ -1687,7 +1778,7 @@ app.delete('/api/vendor/items/:itemId', authenticateToken, async (req, res) => {
 });
 
 // Toggle vendor item availability
-app.put('/api/vendor/items/:itemId/toggle-availability', authenticateToken, async (req, res) => {
+app.put('/api/vendor/items/:itemId/toggle-availability', authenticateWithSetupCheck, async (req, res) => {
   try {
     if (req.user.role !== 'vendor') {
       return res.status(403).json({
@@ -1743,7 +1834,7 @@ app.put('/api/vendor/items/:itemId/toggle-availability', authenticateToken, asyn
 });
 
 // Get vendor dashboard stats
-app.get('/api/vendor/dashboard/stats', authenticateToken, async (req, res) => {
+app.get('/api/vendor/dashboard/stats', authenticateWithSetupCheck, async (req, res) => {
   try {
     if (req.user.role !== 'vendor') {
       return res.status(403).json({
@@ -1806,7 +1897,7 @@ app.get('/api/vendor/dashboard/stats', authenticateToken, async (req, res) => {
 });
 
 // Get vendor orders (for vendors)
-app.get('/api/vendor/orders', authenticateToken, async (req, res) => {
+app.get('/api/vendor/orders', authenticateWithSetupCheck, async (req, res) => {
   try {
     if (req.user.role !== 'vendor') {
       return res.status(403).json({
@@ -1863,7 +1954,7 @@ app.get('/api/vendor/orders', authenticateToken, async (req, res) => {
 });
 
 // Get single order by ID
-app.get('/api/orders/:orderId', authenticateToken, async (req, res) => {
+app.get('/api/orders/:orderId', authenticateWithSetupCheck, async (req, res) => {
   try {
     const { orderId } = req.params;
     
@@ -1911,7 +2002,7 @@ app.get('/api/orders/:orderId', authenticateToken, async (req, res) => {
 });
 
 // Update order status (for robot operations)
-app.put('/api/orders/:orderId/status', authenticateToken, async (req, res) => {
+app.put('/api/orders/:orderId/status', authenticateWithSetupCheck, async (req, res) => {
   try {
     const { orderId } = req.params;
     const { status } = req.body;
@@ -2066,7 +2157,7 @@ app.put('/api/orders/:orderId/status', authenticateToken, async (req, res) => {
 // 🔐 OTP VERIFICATION ENDPOINTS
 
 // Verify delivery OTP
-app.post('/api/orders/:orderId/verify-otp', authenticateToken, async (req, res) => {
+app.post('/api/orders/:orderId/verify-otp', authenticateWithSetupCheck, async (req, res) => {
   try {
     const { orderId } = req.params;
     const { otp } = req.body;
@@ -2132,7 +2223,7 @@ app.post('/api/orders/:orderId/verify-otp', authenticateToken, async (req, res) 
 });
 
 // Get OTP status for order
-app.get('/api/orders/:orderId/otp-status', authenticateToken, async (req, res) => {
+app.get('/api/orders/:orderId/otp-status', authenticateWithSetupCheck, async (req, res) => {
   try {
     const { orderId } = req.params;
     const otpStatus = OTPService.getOTPStatus(orderId);
@@ -2153,7 +2244,7 @@ app.get('/api/orders/:orderId/otp-status', authenticateToken, async (req, res) =
 });
 
 // Resend OTP for order
-app.post('/api/orders/:orderId/resend-otp', authenticateToken, async (req, res) => {
+app.post('/api/orders/:orderId/resend-otp', authenticateWithSetupCheck, async (req, res) => {
   try {
     const { orderId } = req.params;
 
@@ -2207,7 +2298,7 @@ app.post('/api/orders/:orderId/resend-otp', authenticateToken, async (req, res) 
 });
 
 // Vendor approve order
-app.put('/api/vendor/orders/:orderId/approve', authenticateToken, async (req, res) => {
+app.put('/api/vendor/orders/:orderId/approve', authenticateWithSetupCheck, async (req, res) => {
   try {
     const { orderId } = req.params;
     
@@ -2313,7 +2404,7 @@ app.put('/api/vendor/orders/:orderId/approve', authenticateToken, async (req, re
 });
 
 // Vendor reject order
-app.put('/api/vendor/orders/:orderId/reject', authenticateToken, async (req, res) => {
+app.put('/api/vendor/orders/:orderId/reject', authenticateWithSetupCheck, async (req, res) => {
   try {
     const { orderId } = req.params;
     const { reason } = req.body;
@@ -2384,7 +2475,7 @@ app.put('/api/vendor/orders/:orderId/reject', authenticateToken, async (req, res
 });
 
 // Update order status (for vendors)
-app.put('/api/orders/:orderId/status', authenticateToken, async (req, res) => {
+app.put('/api/orders/:orderId/status', authenticateWithSetupCheck, async (req, res) => {
   try {
     const { orderId } = req.params;
     const { status } = req.body;
@@ -2458,7 +2549,7 @@ app.get('/api/robots', async (req, res) => {
 });
 
 // Get user notifications
-app.get('/api/notifications', authenticateToken, async (req, res) => {
+app.get('/api/notifications', authenticateWithSetupCheck, async (req, res) => {
   try {
     const { limit = 20 } = req.query;
     const notifications = await notificationService.getUserNotifications(req.user._id, parseInt(limit));
@@ -2478,7 +2569,7 @@ app.get('/api/notifications', authenticateToken, async (req, res) => {
 });
 
 // Mark notification as read
-app.put('/api/notifications/:notificationId/read', authenticateToken, async (req, res) => {
+app.put('/api/notifications/:notificationId/read', authenticateWithSetupCheck, async (req, res) => {
   try {
     await notificationService.markAsRead(req.params.notificationId);
     
@@ -2497,7 +2588,7 @@ app.put('/api/notifications/:notificationId/read', authenticateToken, async (req
 });
 
 // Mark all notifications as read
-app.put('/api/notifications/read-all', authenticateToken, async (req, res) => {
+app.put('/api/notifications/read-all', authenticateWithSetupCheck, async (req, res) => {
   try {
     await notificationService.markAllAsRead(req.user._id);
     
@@ -2553,7 +2644,7 @@ app.use('*', (req, res) => {
 });
 
 // 🧪 SMS TESTING ENDPOINT
-app.post('/api/test-sms', authenticateToken, async (req, res) => {
+app.post('/api/test-sms', authenticateWithSetupCheck, async (req, res) => {
   try {
     const { phoneNumber, testType } = req.body;
     
@@ -2602,8 +2693,97 @@ app.post('/api/test-sms', authenticateToken, async (req, res) => {
   }
 });
 
+// 📧 EMAIL TESTING ENDPOINT
+app.post('/api/test-email', authenticateWithSetupCheck, async (req, res) => {
+  try {
+    const { email, testType } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email address is required'
+      });
+    }
+
+    console.log(`📧 Testing email type: ${testType || 'welcome'} to ${email}`);
+
+    let result;
+
+    switch (testType) {
+      case 'welcome':
+        result = await EmailService.sendWelcomeEmail(email, 'Test User', false);
+        break;
+        
+      case 'welcome-google':
+        result = await EmailService.sendWelcomeEmail(email, 'Test User', true);
+        break;
+        
+      case 'password-setup':
+        result = await EmailService.sendPasswordSetupEmail(email, 'Test User', 'TempPass123');
+        break;
+        
+      case 'order-confirmation':
+        const testOrder = {
+          orderId: 'TEST-' + Date.now(),
+          vendorName: 'Test Restaurant',
+          totalAmount: 299.99,
+          customerName: 'Test User',
+          items: [
+            { name: 'Test Pizza', quantity: 1, price: 199.99 },
+            { name: 'Test Drink', quantity: 2, price: 50.00 }
+          ],
+          deliveryAddress: '123 Test Street, Test City'
+        };
+        result = await EmailService.sendOrderConfirmationEmail(email, testOrder);
+        break;
+        
+      case 'order-status':
+        const statusOrder = {
+          orderId: 'TEST-' + Date.now(),
+          vendorName: 'Test Restaurant',
+          totalAmount: 299.99,
+          status: 'robot_delivering'
+        };
+        result = await EmailService.sendOrderStatusEmail(email, statusOrder);
+        break;
+        
+      case 'config-test':
+        result = await EmailService.testEmailConfiguration();
+        break;
+        
+      default:
+        result = await EmailService.sendWelcomeEmail(email, 'Test User', false);
+    }
+
+    res.json({
+      success: true,
+      message: `Email test completed for ${testType || 'welcome'}`,
+      data: result
+    });
+
+  } catch (error) {
+    console.error('Email test error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Email test failed',
+      error: error.message
+    });
+  }
+});
+
+// Initialize email service on startup
+EmailService.testEmailConfiguration().then(result => {
+  if (result.success) {
+    console.log('📧 Email service ready');
+  } else {
+    console.log('📧 Email service in simulation mode');
+  }
+});
+
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT} with database connection`);
+  console.log(`📧 Email service: ${process.env.EMAIL_USER ? 'Configured' : 'Simulation mode'}`);
+  console.log(`📱 SMS service: ${process.env.TWILIO_ACCOUNT_SID ? 'Configured' : 'Simulation mode'}`);
 });
 
 module.exports = app;
