@@ -209,7 +209,7 @@ Vendor Accounts:
 ### Environment Variables
 ```bash
 # Database
-MONGODB_URI="mongodb+srv://Robot:112006@cluster0.gcnua.mongodb.net/"
+MONGODB_URI="mongodb+srv://user:password@cluster0.gcnua.mongodb.net/"
 
 # JWT Configuration
 JWT_SECRET="your-jwt-secret"
