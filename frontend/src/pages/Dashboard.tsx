@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
+import { orderAPI } from '@/services/api';
 import {
   ShoppingCartIcon,
   ClockIcon,
@@ -12,40 +13,57 @@ import {
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const { itemCount, total } = useCart();
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock orders data consistent with Orders and OrderDetail pages
-  const mockOrders = [
-    {
-      _id: '1',
-      items: [
-        { name: 'Margherita Pizza', quantity: 2 },
-        { name: 'Pepperoni Pizza', quantity: 1 }
-      ],
-      totalAmount: 40.97,
-      status: 'robot_delivering',
-      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      _id: '2',
-      items: [
-        { name: 'Organic Bananas', quantity: 2 }
-      ],
-      totalAmount: 5.98,
-      status: 'delivered',
-      createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      _id: '3',
-      items: [
-        { name: 'Margherita Pizza', quantity: 1 }
-      ],
-      totalAmount: 12.99,
-      status: 'pending',
-      createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+  // Fetch real user orders
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Use the same API call as Orders page for consistency
+        const response = await orderAPI.getAll();
+        
+        if (response.data.success) {
+          // CORRECT path based on actual API response: response.data.data.orders
+          const ordersData = response.data.data?.orders || [];
+          
+          // Ensure we have an array before sorting
+          if (Array.isArray(ordersData)) {
+            // Sort orders by creation date (newest first)
+            const sortedOrders = ordersData.sort((a: any, b: any) => 
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+            setOrders(sortedOrders);
+          } else {
+            console.warn('Orders data is not an array:', ordersData);
+            setOrders([]);
+          }
+        } else {
+          setError('Failed to fetch orders');
+          setOrders([]);
+        }
+      } catch (error: any) {
+        console.error('Error fetching orders:', error);
+        // If user has no orders or API returns empty, don't show error
+        if (error.response?.status === 404 || error.response?.data?.message?.includes('No orders found')) {
+          setOrders([]);
+        } else {
+          setError('Failed to load orders');
+          setOrders([]);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user) {
+      fetchOrders();
     }
-  ];
-
-  const orders = mockOrders;
+  }, [user]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -130,7 +148,7 @@ const Dashboard: React.FC = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Cart Total</p>
-                <p className="text-2xl font-bold text-gray-900">${total.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-gray-900">₹{total.toFixed(2)}</p>
               </div>
             </div>
           </div>
@@ -175,7 +193,24 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
         <div className="card-content">
-          {orders.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading your orders...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-8">
+              <div className="text-red-400 text-4xl mb-4">⚠️</div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Unable to load orders</h3>
+              <p className="text-gray-600 mb-4">{error}</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="btn btn-primary"
+              >
+                Try Again
+              </button>
+            </div>
+          ) : orders.length === 0 ? (
             <div className="text-center py-8">
               <div className="text-gray-400 text-4xl mb-4">📦</div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">No orders yet</h3>
@@ -191,9 +226,23 @@ const Dashboard: React.FC = () => {
                   <div className="flex-1">
                     <div className="flex items-center space-x-3">
                       <div>
-                        <p className="font-medium text-gray-900">Order #{order._id.slice(-6)}</p>
+                        <p className="font-medium text-gray-900">
+                          {order.items.length === 1 
+                            ? order.items[0].name
+                            : `${order.items[0].name} ${order.items.length > 1 ? `+ ${order.items.length - 1} more` : ''}`
+                          }
+                        </p>
                         <p className="text-sm text-gray-600">
-                          {order.items.length} item(s) • ${order.totalAmount.toFixed(2)}
+                          {order.items.length} item(s) • ₹{order.totalAmount.toFixed(2)}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(order.createdAt).toLocaleDateString('en-IN', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
                         </p>
                       </div>
                     </div>

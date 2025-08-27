@@ -332,7 +332,7 @@ const OrderTracking: React.FC = () => {
                 <hr />
                 <div className="flex justify-between font-semibold">
                   <span>Total</span>
-                  <span className="text-primary-600">${order.totalAmount.toFixed(2)}</span>
+                  <span className="text-primary-600">₹{order.totalAmount.toFixed(2)}</span>
                 </div>
               </div>
             </div>

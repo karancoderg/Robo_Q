@@ -178,7 +178,7 @@ const VendorItems: React.FC = () => {
         <div className="card">
           <div className="card-content text-center">
             <p className="text-2xl font-bold text-blue-600">
-              ${(menuItems.reduce((sum: any, item: any) => sum + item.price, 0) / menuItems.length).toFixed(2)}
+              ₹{(menuItems.reduce((sum: any, item: any) => sum + item.price, 0) / menuItems.length).toFixed(2)}
             </p>
             <p className="text-sm text-gray-600">Avg Price</p>
           </div>
@@ -223,7 +223,7 @@ const VendorItems: React.FC = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-xl font-bold text-primary-600">${item.price.toFixed(2)}</p>
+                    <p className="text-xl font-bold text-primary-600">₹{item.price.toFixed(2)}</p>
                   </div>
                 </div>
               </div>

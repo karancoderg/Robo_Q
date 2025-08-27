@@ -3,9 +3,13 @@ export interface User {
   name: string;
   email: string;
   phone?: string;
+  googleId?: string;
+  avatar?: string;
   role: 'user' | 'vendor' | 'admin';
   isVerified: boolean;
-  address?: Address;
+  needsPasswordSetup?: boolean;
+  needsRoleSelection?: boolean;
+  address?: Address | IITMandiAddress;
   createdAt?: string;
 }
 
@@ -14,6 +18,17 @@ export interface Address {
   city: string;
   state: string;
   zipCode: string;
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
+}
+
+export interface IITMandiAddress {
+  id: string;
+  name: string;
+  category: 'hostels' | 'academic' | 'guest_house' | 'mess';
+  fullAddress: string;
   coordinates?: {
     lat: number;
     lng: number;
@@ -161,7 +176,7 @@ export interface Notification {
   userId: string;
   title: string;
   message: string;
-  type: 'order_update' | 'delivery_update' | 'system' | 'promotion';
+  type: 'order_update' | 'delivery_update' | 'system' | 'promotion' | 'vendor_order';
   data?: any;
   read: boolean;
   createdAt: string;

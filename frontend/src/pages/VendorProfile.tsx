@@ -349,7 +349,7 @@ const VendorProfile: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="text-center p-4 bg-blue-50 rounded-lg">
                 <CurrencyDollarIcon className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-blue-600">$1,247.50</p>
+                <p className="text-2xl font-bold text-blue-600">₹1,247.50</p>
                 <p className="text-sm text-blue-700">Total Revenue</p>
               </div>
               <div className="text-center p-4 bg-green-50 rounded-lg">

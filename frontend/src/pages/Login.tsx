@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import GoogleOAuthButton from '@/components/GoogleOAuthButton';
+import SetupCompletion from '@/components/SetupCompletion';
 import toast from 'react-hot-toast';
 
 const Login: React.FC = () => {
@@ -12,8 +13,10 @@ const Login: React.FC = () => {
   const [showOTPLogin, setShowOTPLogin] = useState(false);
   const [otp, setOtp] = useState('');
   const [userId, setUserId] = useState('');
+  const [showSetup, setShowSetup] = useState(false);
+  const [setupUser, setSetupUser] = useState(null);
 
-  const { login, loginWithOTP, verifyLoginOTP } = useAuth();
+  const { login, loginWithOTP, verifyLoginOTP, completeSetup } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -70,6 +73,42 @@ const Login: React.FC = () => {
     setLoading(false);
   };
 
+  const handleGoogleSuccess = async (result: { success: boolean; needsSetup?: boolean; user?: any }) => {
+    if (result.success) {
+      if (result.needsSetup && result.user) {
+        setSetupUser(result.user);
+        setShowSetup(true);
+      } else {
+        navigate(from, { replace: true });
+      }
+    }
+  };
+
+  const handleSetupComplete = async (setupData: any) => {
+    setLoading(true);
+    const success = await completeSetup(setupData);
+    if (success) {
+      setShowSetup(false);
+      navigate(from, { replace: true });
+    }
+    setLoading(false);
+  };
+
+  const handleSetupSkip = () => {
+    setShowSetup(false);
+    navigate(from, { replace: true });
+  };
+
+  if (showSetup && setupUser) {
+    return (
+      <SetupCompletion
+        user={setupUser}
+        onComplete={handleSetupComplete}
+        onSkip={handleSetupSkip}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -99,7 +138,7 @@ const Login: React.FC = () => {
             <div className="mb-6">
               <GoogleOAuthButton 
                 text="signin_with" 
-                onSuccess={() => navigate(from, { replace: true })}
+                onSuccess={handleGoogleSuccess}
               />
             </div>
 

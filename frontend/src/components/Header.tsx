@@ -19,7 +19,7 @@ const Header: React.FC = () => {
   
   const { user, isAuthenticated, logout, isVendor, isUser } = useAuth();
   const { itemCount } = useCart();
-  const { notifications } = useSocket();
+  const { notifications, markNotificationAsRead, markAllNotificationsAsRead } = useSocket();
   const navigate = useNavigate();
 
   const unreadNotifications = notifications.filter(n => !n.read);
@@ -145,24 +145,102 @@ const Header: React.FC = () => {
                           No notifications
                         </div>
                       ) : (
-                        notifications.slice(0, 5).map((notification) => (
-                          <div
-                            key={notification.id}
-                            className={`px-4 py-3 border-b border-gray-100 ${
-                              !notification.read ? 'bg-blue-50' : ''
-                            }`}
-                          >
-                            <p className="text-sm font-medium text-gray-900">
-                              {notification.title}
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              {notification.message}
-                            </p>
-                            <p className="text-xs text-gray-400 mt-1">
-                              {new Date(notification.createdAt).toLocaleString()}
-                            </p>
+                        notifications.slice(0, 5).map((notification) => {
+                          // Get notification icon based on type
+                          const getNotificationIcon = (type: string) => {
+                            switch (type) {
+                              case 'order_update': return '📋';
+                              case 'delivery_update': return '🚚';
+                              case 'vendor_order': return '🔔';
+                              case 'promotion': return '🎉';
+                              case 'system': return '📢';
+                              default: return '📋';
+                            }
+                          };
+
+                          // Get notification color based on type
+                          const getNotificationColor = (type: string) => {
+                            switch (type) {
+                              case 'order_update': return 'text-blue-600';
+                              case 'delivery_update': return 'text-green-600';
+                              case 'vendor_order': return 'text-purple-600';
+                              case 'promotion': return 'text-orange-600';
+                              case 'system': return 'text-gray-600';
+                              default: return 'text-blue-600';
+                            }
+                          };
+
+                          return (
+                            <div
+                              key={notification.id}
+                              className={`px-4 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${
+                                !notification.read ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
+                              }`}
+                              onClick={() => {
+                                // Mark as read when clicked
+                                if (!notification.read) {
+                                  markNotificationAsRead(notification.id);
+                                }
+                                // Navigate to relevant page if order-related
+                                if (notification.data?.orderId) {
+                                  navigate(`/orders/${notification.data.orderId}`);
+                                  setIsNotificationsOpen(false);
+                                }
+                              }}
+                            >
+                              <div className="flex items-start space-x-3">
+                                <span className="text-lg flex-shrink-0 mt-0.5">
+                                  {getNotificationIcon(notification.type)}
+                                </span>
+                                <div className="flex-1 min-w-0">
+                                  <p className={`text-sm font-medium ${getNotificationColor(notification.type)}`}>
+                                    {notification.title}
+                                  </p>
+                                  <p className="text-sm text-gray-600 mt-1">
+                                    {notification.message}
+                                  </p>
+                                  <div className="flex items-center justify-between mt-2">
+                                    <p className="text-xs text-gray-400">
+                                      {new Date(notification.createdAt).toLocaleString()}
+                                    </p>
+                                    {!notification.read && (
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        New
+                                      </span>
+                                    )}
+                                  </div>
+                                  {notification.data?.orderTotal && (
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      Order Total: ₹{notification.data.orderTotal}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                      {notifications.length > 0 && (
+                        <div className="px-4 py-3 border-t border-gray-200 bg-gray-50">
+                          <div className="flex items-center justify-between">
+                            <button
+                              onClick={() => {
+                                markAllNotificationsAsRead();
+                                setIsNotificationsOpen(false);
+                              }}
+                              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                            >
+                              Mark all as read
+                            </button>
+                            <Link
+                              to="/notifications"
+                              onClick={() => setIsNotificationsOpen(false)}
+                              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                            >
+                              View all
+                            </Link>
                           </div>
-                        ))
+                        </div>
                       )}
                     </div>
                   </div>

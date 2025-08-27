@@ -4,10 +4,10 @@
   "description": "Backend API for Autonomous Delivery Robot",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "node src/server-simple.js",
+    "dev": "nodemon src/server.js",
     "dev:full": "nodemon --exec \"ts-node --transpile-only src/server.ts\"",
     "build": "tsc",
-    "start": "node src/server-simple.js",
+    "start": "node src/server.js",
     "test": "jest",
     "lint": "eslint src/**/*.ts",
     "seed": "ts-node src/utils/seedData.ts"
@@ -27,13 +27,13 @@
     "helmet": "^7.1.0",
     "joi": "^17.11.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.0.3",
+    "mongoose": "^8.18.0",
     "node-cron": "^3.0.3",
-    "nodemailer": "^6.9.7",
+    "nodemailer": "^6.10.1",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "socket.io": "^4.7.4",
-    "twilio": "^4.19.0",
+    "twilio": "^4.23.0",
     "winston": "^3.11.0"
   },
   "devDependencies": {

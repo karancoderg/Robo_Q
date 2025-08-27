@@ -19,7 +19,9 @@
     "start:frontend": "cd frontend && npm run start",
     "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
     "test": "cd backend && npm test && cd ../frontend && npm test",
-    "lint": "cd backend && npm run lint && cd ../frontend && npm run lint"
+    "lint": "cd backend && npm run lint && cd ../frontend && npm run lint",
+    "clean": "rm -rf node_modules backend/node_modules frontend/node_modules backend/dist frontend/dist",
+    "fresh-install": "npm run clean && npm run install:all"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

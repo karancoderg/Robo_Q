@@ -22,12 +22,14 @@ import ItemDetail from '@/pages/ItemDetail';
 import Cart from '@/pages/Cart';
 import Checkout from '@/pages/Checkout';
 import Orders from '@/pages/Orders';
+import Notifications from '@/pages/Notifications';
 import OrderDetail from '@/pages/OrderDetail';
 import OrderTracking from '@/pages/OrderTracking';
 import Profile from '@/pages/Profile';
 import VendorProfile from '@/pages/VendorProfile';
 import VendorItems from '@/pages/VendorItems';
 import VendorOrders from '@/pages/VendorOrders';
+import VendorAnalytics from '@/pages/VendorAnalytics';
 import NotFound from '@/pages/NotFound';
 
 // Create a client
@@ -106,6 +108,14 @@ function App() {
                     }
                   />
                   <Route
+                    path="/notifications"
+                    element={
+                      <ProtectedRoute>
+                        <Layout><Notifications /></Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
                     path="/profile"
                     element={
                       <ProtectedRoute>
@@ -144,6 +154,14 @@ function App() {
                     element={
                       <ProtectedRoute requiredRole="vendor">
                         <Layout><VendorOrders /></Layout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/vendor/analytics"
+                    element={
+                      <ProtectedRoute requiredRole="vendor">
+                        <Layout><VendorAnalytics /></Layout>
                       </ProtectedRoute>
                     }
                   />

@@ -3,12 +3,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useForm } from 'react-hook-form';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ChangePasswordModal from '@/components/ChangePasswordModal';
+import AddressSelector from '@/components/AddressSelector';
+import { Address } from '@/constants/addresses';
 import {
   UserIcon,
   EnvelopeIcon,
   PhoneIcon,
   MapPinIcon,
   KeyIcon,
+  AcademicCapIcon,
 } from '@heroicons/react/24/outline';
 
 interface ProfileFormData {
@@ -27,23 +30,35 @@ const Profile: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [useIITMandiAddress, setUseIITMandiAddress] = useState(false);
+  const [selectedIITAddress, setSelectedIITAddress] = useState<Address | null>(null);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ProfileFormData>({
     defaultValues: {
       name: user?.name || '',
       phone: user?.phone || '',
       address: {
-        street: user?.address?.street || '',
-        city: user?.address?.city || '',
-        state: user?.address?.state || '',
-        zipCode: user?.address?.zipCode || '',
+        street: (user?.address && 'street' in user.address) ? user.address.street : '',
+        city: (user?.address && 'city' in user.address) ? user.address.city : '',
+        state: (user?.address && 'state' in user.address) ? user.address.state : '',
+        zipCode: (user?.address && 'zipCode' in user.address) ? user.address.zipCode : '',
       }
     }
   });
 
   const onSubmit = async (data: ProfileFormData) => {
     setLoading(true);
-    const success = await updateProfile(data);
+    
+    // Use IIT Mandi address if selected, otherwise use traditional address
+    const addressData = useIITMandiAddress && selectedIITAddress 
+      ? selectedIITAddress 
+      : data.address;
+    
+    const success = await updateProfile({
+      ...data,
+      address: addressData
+    });
+    
     if (success) {
       setIsEditing(false);
     }
@@ -165,40 +180,109 @@ const Profile: React.FC = () => {
                     Delivery Address
                   </label>
                   {isEditing ? (
-                    <div className="space-y-3">
-                      <input
-                        type="text"
-                        placeholder="Street Address"
-                        className="input w-full"
-                        {...register('address.street')}
-                      />
-                      <div className="grid grid-cols-2 gap-3">
-                        <input
-                          type="text"
-                          placeholder="City"
-                          className="input"
-                          {...register('address.city')}
-                        />
-                        <input
-                          type="text"
-                          placeholder="State"
-                          className="input"
-                          {...register('address.state')}
-                        />
+                    <div className="space-y-4">
+                      {/* Address Type Toggle */}
+                      <div className="flex items-center space-x-4 p-3 bg-blue-50 rounded-lg">
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="addressType"
+                            checked={!useIITMandiAddress}
+                            onChange={() => setUseIITMandiAddress(false)}
+                            className="mr-2"
+                          />
+                          <span className="text-sm font-medium">Custom Address</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="addressType"
+                            checked={useIITMandiAddress}
+                            onChange={() => setUseIITMandiAddress(true)}
+                            className="mr-2"
+                          />
+                          <AcademicCapIcon className="h-4 w-4 mr-1" />
+                          <span className="text-sm font-medium">IIT Mandi Campus</span>
+                        </label>
                       </div>
-                      <input
-                        type="text"
-                        placeholder="ZIP Code"
-                        className="input w-full"
-                        {...register('address.zipCode')}
-                      />
+
+                      {useIITMandiAddress ? (
+                        /* IIT Mandi Address Selector */
+                        <div>
+                          <AddressSelector
+                            selectedAddressId={selectedIITAddress?.id}
+                            onAddressSelect={setSelectedIITAddress}
+                            placeholder="Select your campus location"
+                            className="w-full"
+                          />
+                          {selectedIITAddress && (
+                            <div className="mt-2 p-3 bg-green-50 rounded-lg border border-green-200">
+                              <p className="text-sm font-medium text-green-800">
+                                Selected: {selectedIITAddress.name}
+                              </p>
+                              <p className="text-xs text-green-600">
+                                {selectedIITAddress.fullAddress}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        /* Traditional Address Form */
+                        <div className="space-y-3">
+                          <input
+                            type="text"
+                            placeholder="Street Address"
+                            className="input w-full"
+                            {...register('address.street')}
+                          />
+                          <div className="grid grid-cols-2 gap-3">
+                            <input
+                              type="text"
+                              placeholder="City"
+                              className="input"
+                              {...register('address.city')}
+                            />
+                            <input
+                              type="text"
+                              placeholder="State"
+                              className="input"
+                              {...register('address.state')}
+                            />
+                          </div>
+                          <input
+                            type="text"
+                            placeholder="ZIP Code"
+                            className="input w-full"
+                            {...register('address.zipCode')}
+                          />
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="text-gray-900 py-2">
                       {user.address ? (
                         <div>
-                          <p>{user.address.street}</p>
-                          <p>{user.address.city}, {user.address.state} {user.address.zipCode}</p>
+                          {/* Check if it's an IIT Mandi address */}
+                          {(user.address as any).name ? (
+                            <div className="flex items-start space-x-2">
+                              <AcademicCapIcon className="h-5 w-5 text-blue-600 mt-0.5" />
+                              <div>
+                                <p className="font-medium">{(user.address as any).name}</p>
+                                <p className="text-sm text-gray-600 capitalize">
+                                  {(user.address as any).category?.replace('_', ' ')}
+                                </p>
+                                <p className="text-sm text-gray-500">
+                                  {(user.address as any).fullAddress}
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            /* Traditional address display */
+                            <div>
+                              <p>{(user.address as any).street}</p>
+                              <p>{(user.address as any).city}, {(user.address as any).state} {(user.address as any).zipCode}</p>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <p className="text-gray-500">No address provided</p>
@@ -283,7 +367,7 @@ const Profile: React.FC = () => {
                 <p className="text-sm text-gray-600">Total Orders</p>
               </div>
               <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-2xl font-bold text-green-600">$0.00</p>
+                <p className="text-2xl font-bold text-green-600">₹0.00</p>
                 <p className="text-sm text-gray-600">Total Spent</p>
               </div>
             </div>

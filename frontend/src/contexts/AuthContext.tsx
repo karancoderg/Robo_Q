@@ -9,11 +9,13 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   loginWithOTP: (email: string) => Promise<{ success: boolean; userId?: string }>;
   verifyLoginOTP: (userId: string, otp: string) => Promise<boolean>;
-  loginWithGoogle: (credential: string) => Promise<boolean>;
+  loginWithGoogle: (token: string) => Promise<{ success: boolean; needsSetup?: boolean; user?: User }>;
+  completeSetup: (data: SetupData) => Promise<boolean>;
   register: (data: RegisterData) => Promise<boolean>;
   logout: () => void;
   clearAuth: () => void;
   updateProfile: (data: Partial<User>) => Promise<boolean>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
   setUserFromRegistration: (userData: User, accessToken: string) => void;
   checkAuthStatus: () => Promise<boolean>;
   isAuthenticated: boolean;
@@ -29,6 +31,12 @@ interface RegisterData {
   phone?: string;
   role?: 'user' | 'vendor';
   address?: any;
+}
+
+interface SetupData {
+  password: string;
+  role: 'user' | 'vendor';
+  businessInfo?: any;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -157,26 +165,83 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const loginWithGoogle = async (credential: string): Promise<boolean> => {
+  const loginWithGoogle = async (token: string): Promise<{ success: boolean; needsSetup?: boolean; user?: User }> => {
     try {
-      const response = await authAPI.loginWithGoogle({ credential });
+      const response = await authAPI.loginWithGoogle({ token });
       if (response.data.success) {
-        const { user, accessToken, refreshToken } = response.data.data!;
+        const { user, accessToken, refreshToken, isNewUser, needsSetup } = response.data.data!;
         
-        // Ensure both tokens are stored
+        // Store tokens
         localStorage.setItem('accessToken', accessToken);
         if (refreshToken) {
           localStorage.setItem('refreshToken', refreshToken);
         }
         
+        // Store user email as backup for emergency setup
+        if (user.email) {
+          localStorage.setItem('userEmail', user.email);
+        }
+        
         setUser(user);
-        toast.success('Google login successful!');
-        return true;
+        
+        if (isNewUser && needsSetup) {
+          // Google OAuth - New user needs setup
+          return { success: true, needsSetup: true, user };
+        } else {
+          toast.success('Google login successful!');
+          return { success: true, needsSetup: false, user };
+        }
       }
-      return false;
+      return { success: false };
     } catch (error: any) {
       console.error('Google OAuth error:', error);
       toast.error(error.response?.data?.message || 'Google login failed');
+      return { success: false };
+    }
+  };
+
+  const completeSetup = async (data: SetupData): Promise<boolean> => {
+    try {
+      // Try multiple ways to get user email
+      const userEmail = user?.email || 
+                       localStorage.getItem('userEmail') || 
+                       localStorage.getItem('googleUserEmail');
+      
+      // Emergency Setup - processing user data
+      
+      if (!userEmail) {
+        toast.error('User email not found. Please login again.');
+        return false;
+      }
+      
+      const response = await fetch('http://localhost:5000/api/auth/emergency-complete-setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: userEmail,
+          ...data
+        })
+      });
+      
+      const result = await response.json();
+      // Emergency Setup - Response received
+      
+      if (result.success) {
+        const { user: updatedUser, accessToken, refreshToken } = result.data;
+        localStorage.setItem('accessToken', accessToken);
+        if (refreshToken) {
+          localStorage.setItem('refreshToken', refreshToken);
+        }
+        setUser(updatedUser);
+        toast.success('Setup completed successfully!');
+        return true;
+      } else {
+        toast.error(result.message || 'Setup completion failed');
+        return false;
+      }
+    } catch (error: any) {
+      console.error('🔧 Emergency Setup Error:', error);
+      toast.error('Setup completion failed');
       return false;
     }
   };
@@ -235,6 +300,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const changePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => {
+    try {
+      const response = await authAPI.changePassword({ currentPassword, newPassword });
+      if (response.data.success) {
+        toast.success('Password changed successfully');
+        return true;
+      }
+      return false;
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to change password');
+      return false;
+    }
+  };
+
   // Helper function to check if user is still authenticated
   const checkAuthStatus = async (): Promise<boolean> => {
     const token = localStorage.getItem('accessToken');
@@ -283,7 +362,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const handleStorageChange = (e: StorageEvent) => {
       // Only clear user when access token is explicitly removed by logout
       if (e.key === 'accessToken' && !e.newValue && e.oldValue) {
-        console.log('Access token removed from storage, logging out user');
+        // Access token removed from storage, logging out user
         setUser(null);
       }
     };
@@ -322,10 +401,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loginWithOTP,
     verifyLoginOTP,
     loginWithGoogle,
+    completeSetup,
     register,
     logout,
     clearAuth,
     updateProfile,
+    changePassword,
     setUserFromRegistration,
     checkAuthStatus,
     isAuthenticated: !!user, // Simple: if user exists, they're authenticated

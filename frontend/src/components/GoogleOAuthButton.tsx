@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 
 interface GoogleOAuthButtonProps {
   text?: string;
-  onSuccess?: () => void;
+  onSuccess?: (result: { success: boolean; needsSetup?: boolean; user?: any }) => void;
   onError?: () => void;
 }
 
@@ -20,11 +20,17 @@ const GoogleOAuthButton: React.FC<GoogleOAuthButtonProps> = ({
   const handleSuccess = async (credentialResponse: any) => {
     setIsLoading(true);
     try {
-      console.log('Google OAuth success:', credentialResponse);
-      const success = await loginWithGoogle(credentialResponse.credential);
-      if (success) {
-        toast.success('Successfully signed in with Google!');
-        onSuccess?.();
+      // Google OAuth success - processing credential
+      const result = await loginWithGoogle(credentialResponse.credential);
+      
+      if (result.success) {
+        if (result.needsSetup) {
+          // Don't show success toast yet, user needs to complete setup
+          onSuccess?.(result);
+        } else {
+          toast.success('Successfully signed in with Google!');
+          onSuccess?.(result);
+        }
       } else {
         toast.error('Failed to sign in with Google');
         onError?.();

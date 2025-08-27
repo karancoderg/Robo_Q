@@ -25,23 +25,23 @@ interface LoginResponse {
 // Create axios instance
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
-  timeout: 10000,
+  timeout: 30000, // Increased to 30 seconds for Render.com cold starts
 });
 
 // Request interceptor to add auth token
 api.interceptors.request.use((config) => {
   // Special handling for Google OAuth - it doesn't need our access token
   if (config.url?.includes('google-auth') || config.url?.includes('/auth/google')) {
-    console.log('API Request:', config.method?.toUpperCase(), config.url, '(Google OAuth - no token needed)');
+    // Google OAuth request - no token needed
     return config;
   }
 
   const token = localStorage.getItem('accessToken');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
-    console.log('API Request:', config.method?.toUpperCase(), config.url, 'with token');
+    // Token added to request
   } else {
-    console.log('API Request:', config.method?.toUpperCase(), config.url, 'WITHOUT TOKEN');
+    // No token available
   }
   return config;
 });
@@ -126,9 +126,16 @@ export const authAPI = {
     api.post('/auth/login/otp/verify', data),
 
   loginWithGoogle: (data: {
-    credential: string;
+    token: string;
+  }): Promise<AxiosResponse<ApiResponse<LoginResponse & { isNewUser?: boolean; needsSetup?: boolean }>>> =>
+    api.post('/auth/google', data),
+
+  completeSetup: (data: {
+    password: string;
+    role: 'user' | 'vendor';
+    businessInfo?: any;
   }): Promise<AxiosResponse<ApiResponse<LoginResponse>>> =>
-    api.post('/google-auth/token', data),
+    api.post('/auth/complete-setup', data),
 
   changePassword: (data: {
     currentPassword: string;
@@ -282,12 +289,19 @@ export const orderAPI = {
   }): Promise<AxiosResponse<ApiResponse<any>>> =>
     api.post('/orders', data),
 
+  getAll: (params?: {
+    status?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<AxiosResponse<ApiResponse<any>>> =>
+    api.get('/orders', { params }),
+
   getMyOrders: (params?: {
     status?: string;
     page?: number;
     limit?: number;
   }): Promise<AxiosResponse<ApiResponse<any>>> =>
-    api.get('/orders/my-orders', { params }),
+    api.get('/orders', { params }),
 
   getById: (id: string): Promise<AxiosResponse<ApiResponse<any>>> =>
     api.get(`/orders/${id}`),
@@ -311,10 +325,33 @@ export const robotAPI = {
     api.get(`/robots/${id}/location`),
 };
 
+// Addresses API
+export const addressesAPI = {
+  getIITMandiAddresses: (category?: string): Promise<AxiosResponse<ApiResponse<{
+    addresses: any[];
+    categories: Record<string, string>;
+  }>>> =>
+    api.get('/addresses/iit-mandi', { params: category ? { category } : {} }),
+};
+
 // Health check
 export const healthAPI = {
   check: (): Promise<AxiosResponse<ApiResponse>> =>
     api.get('/health'),
+};
+
+// Notification API
+export const notificationAPI = {
+  getAll: (params?: {
+    limit?: number;
+  }): Promise<AxiosResponse<ApiResponse<any>>> =>
+    api.get('/notifications', { params }),
+
+  markAsRead: (notificationId: string): Promise<AxiosResponse<ApiResponse<any>>> =>
+    api.put(`/notifications/${notificationId}/read`),
+
+  markAllAsRead: (): Promise<AxiosResponse<ApiResponse<any>>> =>
+    api.put('/notifications/read-all'),
 };
 
 export default api;

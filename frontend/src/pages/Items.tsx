@@ -150,7 +150,7 @@ const Items: React.FC = () => {
                       )}
                     </div>
                     <div className="text-right">
-                      <p className="text-lg font-bold text-primary-600">${item.price}</p>
+                      <p className="text-lg font-bold text-primary-600">₹{item.price}</p>
                       {!item.isAvailable && (
                         <span className="badge badge-error text-xs">Unavailable</span>
                       )}

@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { vendorAPI } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import OrderDetailsModal from '@/components/OrderDetailsModal';
 import toast from 'react-hot-toast';
 import {
   ShoppingBagIcon,
@@ -18,6 +19,8 @@ import {
 const VendorDashboard: React.FC = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [isOrderDetailsOpen, setIsOrderDetailsOpen] = useState(false);
 
   // Fetch dashboard stats
   const { data: statsData, isLoading: statsLoading } = useQuery(
@@ -48,12 +51,38 @@ const VendorDashboard: React.FC = () => {
 
   // Approve order mutation
   const approveOrderMutation = useMutation(vendorAPI.approveOrder, {
+    onMutate: async (orderId) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries('vendor-recent-orders');
+      await queryClient.cancelQueries('vendor-dashboard-stats');
+
+      // Snapshot the previous value
+      const previousOrders = queryClient.getQueryData('vendor-recent-orders');
+      const previousStats = queryClient.getQueryData('vendor-dashboard-stats');
+
+      // Optimistically update the order status
+      queryClient.setQueryData('vendor-recent-orders', (old: any) => {
+        if (!old || !Array.isArray(old)) return old;
+        return old.map((order: any) => 
+          order._id === orderId 
+            ? { ...order, status: 'vendor_approved' }
+            : order
+        );
+      });
+
+      // Return a context object with the snapshotted value
+      return { previousOrders, previousStats };
+    },
     onSuccess: () => {
       toast.success('Order approved successfully!');
+      // Refetch to get the latest data from server
       queryClient.invalidateQueries('vendor-recent-orders');
       queryClient.invalidateQueries('vendor-dashboard-stats');
     },
-    onError: (error: any) => {
+    onError: (error: any, _orderId, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      queryClient.setQueryData('vendor-recent-orders', context?.previousOrders);
+      queryClient.setQueryData('vendor-dashboard-stats', context?.previousStats);
       toast.error(error.response?.data?.message || 'Failed to approve order');
     },
   });
@@ -98,8 +127,28 @@ const VendorDashboard: React.FC = () => {
     return status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
-  const handleApproveOrder = (orderId: string) => {
+  const handleApproveOrder = (orderId: string, event?: React.MouseEvent) => {
+    // Prevent any default behavior that might cause page refresh
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
     approveOrderMutation.mutate(orderId);
+  };
+
+  const handleViewOrderDetails = (order: any, event?: React.MouseEvent) => {
+    // Prevent any default behavior
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    setSelectedOrder(order);
+    setIsOrderDetailsOpen(true);
+  };
+
+  const handleCloseOrderDetails = () => {
+    setIsOrderDetailsOpen(false);
+    setSelectedOrder(null);
   };
 
   const toggleItemAvailability = (itemId: string) => {
@@ -180,7 +229,7 @@ const VendorDashboard: React.FC = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                <p className="text-2xl font-bold text-gray-900">${vendorStats.totalRevenue.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-gray-900">₹{vendorStats.totalRevenue.toFixed(2)}</p>
               </div>
             </div>
           </div>
@@ -189,29 +238,29 @@ const VendorDashboard: React.FC = () => {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="card hover:shadow-md transition-shadow cursor-pointer">
+        <Link to="/vendor/orders" className="card hover:shadow-md transition-shadow cursor-pointer">
           <div className="card-content text-center py-8">
             <div className="text-4xl mb-4">📋</div>
             <h3 className="text-lg font-semibold mb-2">Manage Orders</h3>
             <p className="text-gray-600">View and approve incoming orders</p>
           </div>
-        </div>
+        </Link>
 
-        <div className="card hover:shadow-md transition-shadow cursor-pointer">
+        <Link to="/vendor/items" className="card hover:shadow-md transition-shadow cursor-pointer">
           <div className="card-content text-center py-8">
             <div className="text-4xl mb-4">🍕</div>
             <h3 className="text-lg font-semibold mb-2">Menu Items</h3>
             <p className="text-gray-600">Add and edit your menu items</p>
           </div>
-        </div>
+        </Link>
 
-        <div className="card hover:shadow-md transition-shadow cursor-pointer">
+        <Link to="/vendor/analytics" className="card hover:shadow-md transition-shadow cursor-pointer">
           <div className="card-content text-center py-8">
             <div className="text-4xl mb-4">📊</div>
             <h3 className="text-lg font-semibold mb-2">Analytics</h3>
             <p className="text-gray-600">View sales and performance data</p>
           </div>
-        </div>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -248,17 +297,24 @@ const VendorDashboard: React.FC = () => {
                   </div>
                   
                   <div className="flex justify-between items-center">
-                    <span className="font-bold text-primary-600">${order.totalAmount.toFixed(2)}</span>
+                    <span className="font-bold text-primary-600">₹{order.totalAmount.toFixed(2)}</span>
                     <div className="flex space-x-2">
                       {order.status === 'pending' && (
                         <button
-                          onClick={() => handleApproveOrder(order._id)}
-                          className="btn btn-primary btn-sm"
+                          type="button"
+                          onClick={(e) => handleApproveOrder(order._id, e)}
+                          disabled={approveOrderMutation.isLoading}
+                          className="btn btn-primary btn-sm disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          Approve
+                          {approveOrderMutation.isLoading ? 'Approving...' : 'Approve'}
                         </button>
                       )}
-                      <button className="btn btn-outline btn-sm">
+                      <button 
+                        type="button"
+                        onClick={(e) => handleViewOrderDetails(order, e)}
+                        className="btn btn-outline btn-sm"
+                        title="View Order Details"
+                      >
                         <EyeIcon className="h-4 w-4" />
                       </button>
                     </div>
@@ -289,7 +345,7 @@ const VendorDashboard: React.FC = () => {
                       <h3 className="font-medium text-gray-900">{item.name}</h3>
                       <p className="text-sm text-gray-600 mb-1">{item.description}</p>
                       <div className="flex items-center space-x-4 text-sm text-gray-500">
-                        <span>${item.price.toFixed(2)}</span>
+                        <span>₹{item.price.toFixed(2)}</span>
                         <span>⏱️ {item.preparationTime} min</span>
                       </div>
                     </div>
@@ -328,11 +384,11 @@ const VendorDashboard: React.FC = () => {
         <div className="card-content">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center p-4 bg-green-50 rounded-lg">
-              <p className="text-2xl font-bold text-green-600">${vendorStats.todayRevenue.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-green-600">₹{vendorStats.todayRevenue.toFixed(2)}</p>
               <p className="text-sm text-green-700">Today's Revenue</p>
             </div>
             <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <p className="text-2xl font-bold text-blue-600">${vendorStats.averageOrderValue.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-blue-600">₹{vendorStats.averageOrderValue.toFixed(2)}</p>
               <p className="text-sm text-blue-700">Average Order Value</p>
             </div>
             <div className="text-center p-4 bg-purple-50 rounded-lg">
@@ -342,6 +398,13 @@ const VendorDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Order Details Modal */}
+      <OrderDetailsModal
+        isOpen={isOrderDetailsOpen}
+        onClose={handleCloseOrderDetails}
+        order={selectedOrder}
+      />
     </div>
   );
 };
