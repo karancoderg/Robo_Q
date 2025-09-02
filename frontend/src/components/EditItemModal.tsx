@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from 'react-query';
 import { vendorAPI } from '@/services/api';
@@ -29,16 +29,32 @@ const EditItemModal: React.FC<EditItemModalProps> = ({ isOpen, onClose, item }) 
   const queryClient = useQueryClient();
   const { register, handleSubmit, reset, formState: { errors } } = useForm<EditItemFormData>({
     defaultValues: {
-      name: item?.name || '',
-      description: item?.description || '',
-      price: item?.price || 0,
-      category: item?.category || 'food',
-      preparationTime: item?.preparationTime || 15,
-      weight: item?.weight || 300,
-      tags: item?.tags?.join(', ') || '',
-      isAvailable: item?.isAvailable || true
+      name: '',
+      description: '',
+      price: 0,
+      category: 'food',
+      preparationTime: 15,
+      weight: 300,
+      tags: '',
+      isAvailable: true
     }
   });
+
+  // Reset form when item changes
+  useEffect(() => {
+    if (item) {
+      reset({
+        name: item.name || '',
+        description: item.description || '',
+        price: item.price || 0,
+        category: item.category || 'food',
+        preparationTime: item.preparationTime || 15,
+        weight: item.weight || 300,
+        tags: item.tags?.join(', ') || '',
+        isAvailable: item.isAvailable !== undefined ? item.isAvailable : true
+      });
+    }
+  }, [item, reset]);
 
   const editItemMutation = useMutation(
     (data: any) => vendorAPI.updateItem(item._id, data),

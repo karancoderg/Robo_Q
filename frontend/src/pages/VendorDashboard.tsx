@@ -328,13 +328,7 @@ const VendorDashboard: React.FC = () => {
         {/* Menu Items */}
         <div className="card">
           <div className="card-header">
-            <div className="flex justify-between items-center">
-              <h2 className="card-title">Menu Items</h2>
-              <button className="btn btn-primary btn-sm flex items-center space-x-1">
-                <PlusIcon className="h-4 w-4" />
-                <span>Add Item</span>
-              </button>
-            </div>
+            <h2 className="card-title">Menu Items</h2>
           </div>
           <div className="card-content">
             <div className="space-y-4">

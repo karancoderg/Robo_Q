@@ -239,16 +239,6 @@ const Login: React.FC = () => {
             </div>
           </form>
         )}
-
-        <div className="mt-6">
-          <div className="text-center text-sm text-gray-600">
-            Demo Accounts:
-            <br />
-            User: john@example.com / password123
-            <br />
-            Vendor: pizza@example.com / password123
-          </div>
-        </div>
       </div>
     </div>
   );
