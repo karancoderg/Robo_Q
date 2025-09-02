@@ -11,7 +11,6 @@ import {
   ClockIcon,
   CheckCircleIcon,
   CurrencyDollarIcon,
-  PlusIcon,
   EyeIcon,
   PencilIcon,
 } from '@heroicons/react/24/outline';
