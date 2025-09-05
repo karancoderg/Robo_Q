@@ -98,7 +98,12 @@ export const authAPI = {
     email: string;
     password: string;
     role: 'user' | 'vendor';
-    address?: any;
+    restaurantInfo?: {
+      name: string;
+      address: string;
+      phone: string;
+      cuisineType: string;
+    };
   }): Promise<AxiosResponse<ApiResponse<LoginResponse>>> =>
     api.post('/auth/register', data),
 
@@ -214,6 +219,9 @@ export const vendorAPI = {
   updateOrderStatus: (orderId: string, status: string): Promise<AxiosResponse<ApiResponse<any>>> =>
     api.put(`/vendor/orders/${orderId}/status`, { status }),
 
+  getRobotTracking: (orderId: string): Promise<AxiosResponse<ApiResponse<any>>> =>
+    api.get(`/orders/${orderId}/robot-tracking`),
+
   // Menu Items
   getItems: (params?: {
     category?: string;
@@ -312,6 +320,9 @@ export const orderAPI = {
 
   confirmDelivery: (id: string, otp: string): Promise<AxiosResponse<ApiResponse<any>>> =>
     api.post(`/orders/${id}/confirm-delivery`, { otp }),
+
+  getRobotTracking: (id: string): Promise<AxiosResponse<ApiResponse<any>>> =>
+    api.get(`/orders/${id}/robot-tracking`)
 };
 
 // Robot API

@@ -3,6 +3,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const axios = require('axios');
 const SMSService = require('./services/smsService');
 const EmailService = require('./services/emailService');
 const EnhancedSMSService = require('./services/enhancedSmsService');
@@ -378,6 +379,63 @@ userSchema.methods.toJSON = function() {
   return userObject;
 };
 
+// Robot assignment function
+async function assignRobotToOrder(order, vendor) {
+  try {
+    // Check if robot API is available
+    const robotAPIUrl = process.env.ROBOT_API_URL || 'http://localhost:8080/api';
+    
+    try {
+      const healthCheck = await axios.get(`${robotAPIUrl}/health`, { timeout: 3000 });
+      
+      if (healthCheck.status === 200) {
+        // Real robot API is available
+        const assignmentResponse = await axios.post(`${robotAPIUrl}/robots/assign`, {
+          orderId: order._id,
+          vendorLocation: {
+            lat: vendor.address.coordinates.lat,
+            lng: vendor.address.coordinates.lng
+          },
+          customerLocation: {
+            lat: order.deliveryAddress.coordinates?.lat || 40.7614,
+            lng: order.deliveryAddress.coordinates?.lng || -73.9776
+          }
+        });
+        
+        return {
+          success: true,
+          robotId: assignmentResponse.data.robotId,
+          estimatedDeliveryTime: new Date(assignmentResponse.data.estimatedDeliveryTime)
+        };
+      }
+    } catch (apiError) {
+      console.log('Robot API unavailable, using demo robot assignment');
+    }
+    
+    // Fallback to demo robot assignment
+    const demoRobots = ['RB-001', 'RB-002', 'RB-003'];
+    const availableRobot = demoRobots[Math.floor(Math.random() * demoRobots.length)];
+    
+    // Calculate demo delivery time (15-30 minutes)
+    const deliveryMinutes = 15 + Math.random() * 15;
+    const estimatedDeliveryTime = new Date(Date.now() + deliveryMinutes * 60 * 1000);
+    
+    return {
+      success: true,
+      robotId: availableRobot,
+      estimatedDeliveryTime,
+      isDemo: true
+    };
+    
+  } catch (error) {
+    console.error('Robot assignment failed:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
 // Models
 const User = mongoose.model('User', userSchema);
 const Vendor = mongoose.model('Vendor', vendorSchema);
@@ -673,11 +731,15 @@ app.post('/api/auth/verify-otp', async (req, res) => {
 // Register
 app.post('/api/auth/register', async (req, res) => {
   try {
-    // SECURITY FIX: Remove role from request body to prevent privilege escalation
-    const { name, email, password } = req.body;
+    const { name, email, password, role = 'user', restaurantInfo } = req.body;
     
-    // Force default role - users must request vendor role through proper channels
-    const role = 'user';
+    // Validate role
+    if (!['user', 'vendor'].includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid role specified'
+      });
+    }
     
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -692,10 +754,52 @@ app.post('/api/auth/register', async (req, res) => {
       email,
       password,
       role,
-      isVerified: false
+      isVerified: false,
+      setupCompleted: true // Set to true for all users to skip setup page
     });
     
     await newUser.save();
+    
+    // If vendor role and restaurant info provided, create vendor profile
+    if (role === 'vendor' && restaurantInfo) {
+      try {
+        const vendor = new Vendor({
+          userId: newUser._id,
+          businessName: restaurantInfo.name,
+          description: `${restaurantInfo.cuisineType} restaurant`,
+          category: 'restaurant',
+          address: {
+            street: restaurantInfo.address,
+            city: 'Default City', // You can enhance this later
+            state: 'Default State',
+            zipCode: '00000',
+            coordinates: {
+              lat: 0,
+              lng: 0
+            }
+          },
+          contactInfo: {
+            phone: restaurantInfo.phone,
+            email: email
+          },
+          operatingHours: {
+            open: '09:00',
+            close: '22:00',
+            days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+          },
+          isActive: true,
+          rating: 4.0,
+          totalOrders: 0,
+          totalRevenue: 0
+        });
+        
+        await vendor.save();
+        console.log('Vendor profile created successfully');
+      } catch (vendorError) {
+        console.error('Failed to create vendor profile:', vendorError);
+        // Don't fail the registration if vendor profile creation fails
+      }
+    }
     
     const token = generateToken(newUser);
     
@@ -704,7 +808,7 @@ app.post('/api/auth/register', async (req, res) => {
       message: 'User registered successfully',
       data: {
         user: newUser.toJSON(),
-        token
+        accessToken: token
       }
     });
   } catch (error) {
@@ -2154,6 +2258,124 @@ app.put('/api/orders/:orderId/status', authenticateWithSetupCheck, async (req, r
   }
 });
 
+// Get robot tracking data for order
+app.get('/api/orders/:orderId/robot-tracking', authenticateToken, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    
+    const order = await Order.findById(orderId)
+      .populate('userId', 'name email')
+      .populate('vendorId', 'businessName address');
+    
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+    
+    // Check if user has permission to view this order
+    if (req.user.role === 'user' && !order.userId._id.equals(req.user._id)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
+      });
+    }
+    
+    if (req.user.role === 'vendor') {
+      const vendor = await Vendor.findOne({ userId: req.user._id });
+      if (!vendor || !order.vendorId._id.equals(vendor._id)) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
+    }
+    
+    if (!order.robotId) {
+      return res.status(404).json({
+        success: false,
+        message: 'No robot assigned to this order'
+      });
+    }
+    
+    // Try to get real robot data
+    const robotAPIUrl = process.env.ROBOT_API_URL || 'http://localhost:8080/api';
+    let robotData = null;
+    let isDemo = false;
+    
+    try {
+      const robotResponse = await axios.get(`${robotAPIUrl}/robots/${order.robotId}/location`, { timeout: 3000 });
+      robotData = robotResponse.data;
+    } catch (apiError) {
+      // Fallback to demo data
+      isDemo = true;
+      robotData = generateDemoRobotData(order);
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        order: {
+          id: order._id,
+          status: order.status,
+          robotId: order.robotId,
+          estimatedDeliveryTime: order.estimatedDeliveryTime,
+          vendorLocation: {
+            lat: order.vendorAddress.coordinates?.lat || 40.7505,
+            lng: order.vendorAddress.coordinates?.lng || -73.9934,
+            name: order.vendorId.businessName
+          },
+          customerLocation: {
+            lat: order.deliveryAddress.coordinates?.lat || 40.7614,
+            lng: order.deliveryAddress.coordinates?.lng || -73.9776,
+            name: 'Delivery Address'
+          }
+        },
+        robot: robotData,
+        isDemo
+      }
+    });
+    
+  } catch (error) {
+    console.error('Robot tracking fetch error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch robot tracking data',
+      error: error.message
+    });
+  }
+});
+
+function generateDemoRobotData(order) {
+  const statuses = ['assigned', 'picking_up', 'delivering'];
+  const currentStatus = statuses[Math.min(statuses.length - 1, Math.floor((Date.now() - order.robotAssignedAt) / (5 * 60 * 1000)))];
+  
+  // Generate demo location based on order progress
+  const vendorLat = order.vendorAddress.coordinates?.lat || 40.7505;
+  const vendorLng = order.vendorAddress.coordinates?.lng || -73.9934;
+  const customerLat = order.deliveryAddress.coordinates?.lat || 40.7614;
+  const customerLng = order.deliveryAddress.coordinates?.lng || -73.9776;
+  
+  const progress = Math.min(0.9, (Date.now() - order.robotAssignedAt) / (20 * 60 * 1000)); // 20 min total
+  const currentLat = vendorLat + (customerLat - vendorLat) * progress;
+  const currentLng = vendorLng + (customerLng - vendorLng) * progress;
+  
+  return {
+    id: order.robotId,
+    name: `RoboBot ${order.robotId.split('-')[1]}`,
+    status: currentStatus,
+    batteryLevel: 85 + Math.random() * 10,
+    currentLocation: {
+      lat: currentLat,
+      lng: currentLng,
+      timestamp: new Date()
+    },
+    speed: 2.5 + Math.random() * 1.5,
+    estimatedArrival: order.estimatedDeliveryTime
+  };
+}
+
 // 🔐 OTP VERIFICATION ENDPOINTS
 
 // Verify delivery OTP
@@ -2337,6 +2559,24 @@ app.put('/api/vendor/orders/:orderId/approve', authenticateWithSetupCheck, async
     order.status = 'vendor_approved';
     order.approvedAt = new Date();
     await order.save();
+
+    // Try to assign robot after approval
+    try {
+      const robotAssignment = await assignRobotToOrder(order, vendor);
+      if (robotAssignment.success) {
+        order.robotId = robotAssignment.robotId;
+        order.status = 'robot_assigned';
+        order.robotAssignedAt = new Date();
+        order.estimatedDeliveryTime = robotAssignment.estimatedDeliveryTime;
+        await order.save();
+        console.log(`✅ Robot ${robotAssignment.robotId} assigned to order ${orderId}`);
+      } else {
+        console.log(`⚠️ Robot assignment failed for order ${orderId}: ${robotAssignment.error}`);
+      }
+    } catch (robotError) {
+      console.error('❌ Robot assignment error:', robotError);
+      // Continue without robot assignment - order remains vendor_approved
+    }
 
     const updatedOrder = await Order.findById(orderId)
       .populate('userId', 'name email phone')

@@ -270,6 +270,15 @@ const OrdersFixed: React.FC = () => {
                     </div>
 
                     <div className="flex items-center space-x-3">
+                      {(order.status === 'robot_assigned' || order.status === 'robot_picking_up' || order.status === 'robot_delivering') && (
+                        <Link
+                          to={`/orders/${order._id}/tracking`}
+                          className="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                        >
+                          <MapPinIcon className="h-4 w-4 mr-1" />
+                          Track Order
+                        </Link>
+                      )}
                       <Link
                         to={`/orders/${order._id}`}
                         className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"

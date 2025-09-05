@@ -1,6 +1,7 @@
 import Robot from '../models/Robot';
 import Order from '../models/Order';
 import notificationService from './notificationService';
+import smsService from './smsService';
 import { logger } from '../config/logger';
 
 class RobotService {
@@ -38,6 +39,19 @@ class RobotService {
       order.status = 'robot_assigned';
       order.robotId = robot._id;
       await order.save();
+
+      // Get user phone for SMS
+      const populatedOrder = await Order.findById(order._id).populate('userId', 'phone');
+      const user = populatedOrder?.userId as any;
+
+      // Send SMS notification
+      if (user?.phone) {
+        await smsService.sendOrderNotification(user.phone, {
+          _id: order._id.toString().slice(-6),
+          status: 'Robot Assigned',
+          robotName: robot.name
+        });
+      }
 
       // Send notification
       await notificationService.sendOrderStatusUpdate(

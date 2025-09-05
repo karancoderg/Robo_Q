@@ -56,9 +56,16 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [skipInitAuth, setSkipInitAuth] = useState(false); // Flag to skip initAuth after registration
 
   useEffect(() => {
     const initAuth = async () => {
+      // Skip initAuth if we just completed registration
+      if (skipInitAuth) {
+        setLoading(false);
+        return;
+      }
+
       const token = localStorage.getItem('accessToken');
       const refreshToken = localStorage.getItem('refreshToken');
       
@@ -121,7 +128,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const { user, accessToken, refreshToken } = response.data.data!;
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
-        setUser(user);
+        setUser({ ...user, setupCompleted: (user as any).setupCompleted ?? true });
         toast.success('Login successful!');
         return true;
       }
@@ -160,7 +167,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const { user, accessToken, refreshToken } = response.data.data!;
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
-        setUser(user);
+        setUser({ ...user, setupCompleted: (user as any).setupCompleted ?? true });
         toast.success('Login successful!');
         return true;
       }
@@ -188,7 +195,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           localStorage.setItem('userEmail', user.email);
         }
         
-        setUser(user);
+        setUser({ ...user, setupCompleted: (user as any).setupCompleted ?? true });
         
         if (isNewUser && needsSetup) {
           // Google OAuth - New user needs setup
@@ -272,7 +279,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const { user, accessToken, refreshToken } = response.data.data!;
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
-        setUser(user);
+        setUser({ ...user, setupCompleted: (user as any).setupCompleted ?? true });
         toast.success('Registration successful!');
         return true;
       }
@@ -405,8 +412,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [user, checkAuthStatus]);
 
   const setUserFromRegistration = (userData: User, accessToken: string) => {
+    console.log('AuthContext: Setting user from registration:', {
+      userId: userData.id,
+      role: userData.role,
+      setupCompleted: userData.setupCompleted,
+      name: userData.name
+    });
     setUser(userData);
     localStorage.setItem('accessToken', accessToken);
+    setLoading(false);
+    setSkipInitAuth(true); // Prevent initAuth from overriding this data
+    console.log('AuthContext: User state updated, isAuthenticated will be:', !!userData);
   };
 
   const value: AuthContextType = {

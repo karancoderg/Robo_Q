@@ -22,6 +22,11 @@ interface RegisterFormData {
   confirmPassword: string;
   role: 'user' | 'vendor';
   agreeToTerms: boolean;
+  // Vendor-specific fields
+  restaurantName?: string;
+  restaurantAddress?: string;
+  restaurantPhone?: string;
+  cuisineType?: string;
 }
 
 const Register: React.FC = () => {
@@ -37,17 +42,31 @@ const Register: React.FC = () => {
   });
 
   const password = watch('password');
+  const selectedRole = watch('role');
 
   const registerMutation = useMutation(authAPI.register, {
     onSuccess: (response) => {
       const data = response.data?.data;
       if (data?.user && data?.accessToken) {
+        console.log('Registration successful, user data:', data.user);
+        
+        // Set user data and token
         setUserFromRegistration(data.user, data.accessToken);
         toast.success('Registration successful! Welcome to RoboQ!');
-        navigate('/dashboard');
+        
+        // Navigate immediately based on the user data from the response
+        // Don't rely on frontend state, trust the backend response
+        if (data.user.role === 'vendor') {
+          console.log('Vendor registered, navigating to vendor dashboard');
+          navigate('/vendor/dashboard', { replace: true });
+        } else {
+          console.log('User registered, navigating to user dashboard');
+          navigate('/dashboard', { replace: true });
+        }
       }
     },
     onError: (error: any) => {
+      console.error('Registration error:', error);
       toast.error(error.response?.data?.message || 'Registration failed');
     },
   });
@@ -58,12 +77,24 @@ const Register: React.FC = () => {
       return;
     }
 
-    registerMutation.mutate({
+    const registrationData: any = {
       name: data.name,
       email: data.email,
       password: data.password,
       role: data.role,
-    });
+    };
+
+    // Add vendor-specific data if role is vendor
+    if (data.role === 'vendor') {
+      registrationData.restaurantInfo = {
+        name: data.restaurantName,
+        address: data.restaurantAddress,
+        phone: data.restaurantPhone,
+        cuisineType: data.cuisineType,
+      };
+    }
+
+    registerMutation.mutate(registrationData);
   };
 
   return (
@@ -251,6 +282,94 @@ const Register: React.FC = () => {
                   </label>
                 </div>
               </div>
+
+              {/* Vendor Restaurant Information - Only show if vendor role is selected */}
+              {selectedRole === 'vendor' && (
+                <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h3 className="text-sm font-medium text-blue-900 mb-3">Restaurant Information</h3>
+                  
+                  {/* Restaurant Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Restaurant Name *
+                    </label>
+                    <input
+                      type="text"
+                      className="input w-full"
+                      placeholder="Enter your restaurant name"
+                      {...register('restaurantName', { 
+                        required: selectedRole === 'vendor' ? 'Restaurant name is required' : false
+                      })}
+                    />
+                    {errors.restaurantName && (
+                      <p className="text-red-600 text-sm mt-1">{errors.restaurantName.message}</p>
+                    )}
+                  </div>
+
+                  {/* Restaurant Address */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Restaurant Address *
+                    </label>
+                    <input
+                      type="text"
+                      className="input w-full"
+                      placeholder="Enter your restaurant address"
+                      {...register('restaurantAddress', { 
+                        required: selectedRole === 'vendor' ? 'Restaurant address is required' : false
+                      })}
+                    />
+                    {errors.restaurantAddress && (
+                      <p className="text-red-600 text-sm mt-1">{errors.restaurantAddress.message}</p>
+                    )}
+                  </div>
+
+                  {/* Restaurant Phone */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Restaurant Phone *
+                    </label>
+                    <input
+                      type="tel"
+                      className="input w-full"
+                      placeholder="Enter your restaurant phone number"
+                      {...register('restaurantPhone', { 
+                        required: selectedRole === 'vendor' ? 'Restaurant phone is required' : false
+                      })}
+                    />
+                    {errors.restaurantPhone && (
+                      <p className="text-red-600 text-sm mt-1">{errors.restaurantPhone.message}</p>
+                    )}
+                  </div>
+
+                  {/* Cuisine Type */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Cuisine Type *
+                    </label>
+                    <select
+                      className="input w-full"
+                      {...register('cuisineType', { 
+                        required: selectedRole === 'vendor' ? 'Cuisine type is required' : false
+                      })}
+                    >
+                      <option value="">Select cuisine type</option>
+                      <option value="indian">Indian</option>
+                      <option value="chinese">Chinese</option>
+                      <option value="italian">Italian</option>
+                      <option value="mexican">Mexican</option>
+                      <option value="american">American</option>
+                      <option value="thai">Thai</option>
+                      <option value="japanese">Japanese</option>
+                      <option value="mediterranean">Mediterranean</option>
+                      <option value="other">Other</option>
+                    </select>
+                    {errors.cuisineType && (
+                      <p className="text-red-600 text-sm mt-1">{errors.cuisineType.message}</p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Terms and Conditions */}
               <div>

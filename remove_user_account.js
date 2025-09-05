@@ -156,7 +156,7 @@ const removeUserAccount = async (email, options = {}) => {
 };
 
 // Function to list users (for reference)
-const listUsers = async (limit = 10) => {
+const listUsers = async (limit = 40) => {
   try {
     const users = await User.find({})
       .select('name email role createdAt setupCompleted')

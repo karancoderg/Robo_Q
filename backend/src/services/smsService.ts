@@ -67,7 +67,33 @@ class SMSService {
 
   private getOrderMessage(orderData: any): string {
     const status = orderData.status.replace('_', ' ').toUpperCase();
-    return `🤖 Delivery Robot\n\nOrder Update: ${status}\nOrder ID: ${orderData._id}\nTotal: $${orderData.totalAmount}`;
+    let message = `🤖 RoboQ Delivery\n\n${status}\nOrder #${orderData._id}`;
+    
+    if (orderData.vendorName) {
+      message += `\nFrom: ${orderData.vendorName}`;
+    }
+    
+    if (orderData.totalAmount) {
+      message += `\nTotal: ₹${orderData.totalAmount}`;
+    }
+    
+    if (orderData.robotName) {
+      message += `\nRobot: ${orderData.robotName}`;
+    }
+    
+    if (status === 'ROBOT ASSIGNED') {
+      message += `\n\n🚀 Your robot is on the way! Track your order in the app.`;
+    } else if (status === 'ORDER PLACED') {
+      message += `\n\n✅ We're preparing your order. You'll get updates via SMS.`;
+    } else if (status === 'VENDOR APPROVED') {
+      message += `\n\n👨‍🍳 Your order is being prepared. Robot assignment coming soon!`;
+    } else if (status === 'ROBOT DELIVERING') {
+      message += `\n\n🚚 Your order is out for delivery! ETA: 10-15 mins`;
+    } else if (status === 'DELIVERED') {
+      message += `\n\n✅ Order delivered successfully! Enjoy your meal!`;
+    }
+    
+    return message;
   }
 }
 
